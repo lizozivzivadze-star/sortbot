@@ -109,8 +109,18 @@
 // CONSTANTS
 // ═══════════════════════════════════════════════
 const CLASSES=['airplane','automobile','bird','cat','deer','dog','frog','horse','ship','truck'];
-const TO_BIN={airplane:'recycle',automobile:'recycle',bird:'organic',cat:'organic',deer:'organic',dog:'organic',frog:'organic',horse:'organic',ship:'metal',truck:'metal'};
-const DEFECT=new Set(['frog','deer']);
+const TO_BIN={
+  airplane:'metal',
+  automobile:'metal',
+  bird:'organic',
+  cat:'organic',
+  deer:'organic',
+  dog:'organic',
+  frog:'organic',
+  horse:'organic',
+  ship:'metal',
+  truck:'metal'
+};
 const getBin=c=>DEFECT.has(c)?'reject':(TO_BIN[c]||'reject');
 const CLF_ACC={color:.72,hog:.83,ml:.94};
 const NOISE_PEN=[0,.06,.14,.24,.38];
@@ -118,6 +128,18 @@ const LAT_MS={color:[8,18],hog:[22,40],ml:[55,95]};
 const BIN_COL={recycle:'#378add',organic:'#1d9e75',metal:'#7f77dd',reject:'#e24b4a'};
 const BIN_DIM={recycle:'#0a2040',organic:'#082e20',metal:'#1a1840',reject:'#3a1010'};
 const BIN_LBL={recycle:'♻ Recycle',organic:'🌿 Organic',metal:'⚙ Metal',reject:'✕ Reject'};
+const REASONING={
+  airplane:['long wings','thin body','symmetrical shape'],
+  automobile:['wheel patterns','compact body','horizontal edges'],
+  bird:['small body','wing shape','bright colors'],
+  cat:['pointed ears','round face','small body'],
+  deer:['antler shape','long legs','brown color regions'],
+  dog:['snout shape','four-leg silhouette','rounded body'],
+  frog:['large eyes','green regions','wide body'],
+  horse:['long body','tall legs','elongated face'],
+  ship:['flat base','large rectangular mass','watercraft silhouette'],
+  truck:['large wheels','rectangular cargo body','strong vertical edges']
+};
 
 // ═══════════════════════════════════════════════
 // IMAGE GENERATOR — recognisable pixel-art per class
@@ -443,40 +465,90 @@ class Pipeline{
   constructor(clf,noise){this.clf=clf;this.noise=noise;this.lats=[];this.n=0;}
   effAcc(){return Math.max(.25,CLF_ACC[this.clf]-NOISE_PEN[this.noise]);}
   avgLat(){return this.lats.length?(this.lats.reduce((a,b)=>a+b)/this.lats.length).toFixed(1):'0';}
-  process(cls){
-    const t0=performance.now();
-    const log=['Resize → 64×64'];
-    if(this.noise>0) log.push(`Gaussian noise σ=${this.noise*12}`);
-    if(this.noise>=2) log.push('Bilateral denoise');
-    log.push('CLAHE normalisation (LAB L-channel)','HSV colour histogram (32 bins)','HOG descriptor extracted');
-    let pred,conf,cl;
-    if(this.clf==='color'){
-      const map={airplane:.68,automobile:.65,ship:.64,truck:.66,frog:.62,horse:.60,bird:.58,cat:.55,dog:.52,deer:.54};
-      conf=map[cls]||.5; pred=cls;
-      cl=[`Color heuristic → ${pred}`,`Confidence: ${(conf*100).toFixed(0)}%`];
-    } else if(this.clf==='hog'){
-      const map={airplane:.77,automobile:.80,ship:.82,truck:.79,frog:.78,horse:.76,bird:.74,cat:.72,dog:.71,deer:.73};
-      conf=map[cls]||.72; pred=cls;
-      cl=[`HOG peak → ${pred}`,`Confidence: ${(conf*100).toFixed(0)}%`];
-    } else {
-      conf=.80+Math.random()*.14; pred=cls;
-      cl=[`MobileNetV2 → ${pred}`,`Top confidence: ${(conf*100).toFixed(0)}%`];
-    }
-    log.push(...cl);
-    const acc=this.effAcc();
-    if(Math.random()>acc){
-      const w=CLASSES.filter(c=>c!==cls);
-      pred=w[Math.floor(Math.random()*w.length)];
-      conf=.35+Math.random()*.25;
-      log.push(`[noise] override → ${pred}`);
-    }
-    const [lo,hi]=LAT_MS[this.clf];
-    const lat=(performance.now()-t0)+lo+Math.random()*(hi-lo);
-    this.lats.push(lat); this.n++;
-    return{prediction:pred,predictedBin:getBin(pred),correctBin:getBin(cls),
-           isCorrect:getBin(pred)===getBin(cls),confidence:conf,latencyMs:lat.toFixed(1),stageLog:log};
+process(cls){
+  const t0 = performance.now();
+
+  const log = [
+    'Capturing object image',
+    'Reducing image size for fast scanning'
+  ];
+
+  if(this.noise > 0){
+    log.push('Image contains visual noise');
   }
-}
+
+  let pred, conf;
+
+  if(this.clf === 'color'){
+
+    log.push(
+      'Analyzing dominant colors',
+      'Searching for color regions',
+      'Comparing colors with known objects'
+    );
+ conf = 0.55 + Math.random()*0.2;
+    pred = cls;
+  }
+
+  else if(this.clf === 'hog'){
+
+    log.push(
+      'Detecting important edges',
+      'Finding outlines and shapes',
+      'Comparing object silhouette'
+    );
+
+    conf = 0.68 + Math.random()*0.18;
+    pred = cls;
+  }
+
+  else {
+
+    log.push(
+       'Neural network analyzing patterns',
+      'Comparing against learned examples',
+      'Calculating prediction confidence'
+    );
+
+    conf = 0.82 + Math.random()*0.12;
+    pred = cls;
+  }
+
+  const acc = this.effAcc();
+
+  if(Math.random() > acc){
+
+    const wrong = CLASSES.filter(c => c !== cls);
+
+    pred = wrong[Math.floor(Math.random()*wrong.length)];
+
+    conf = 0.35 + Math.random()*0.25;
+
+    log.push('Low confidence prediction detected');
+  }
+
+  log.push(`Prediction: ${pred}`);
+
+  const [lo,hi] = LAT_MS[this.clf];
+
+  const lat =
+    (performance.now()-t0) +
+    lo +
+    Math.random()*(hi-lo);
+
+  this.lats.push(lat);
+  this.n++;
+
+  return {
+    prediction: pred,
+    predictedBin: getBin(pred),
+    correctBin: getBin(cls),
+    isCorrect: getBin(pred) === getBin(cls),
+    confidence: conf,
+    latencyMs: lat.toFixed(1),
+    stageLog: log,
+    reasoning: REASONING[pred]
+  };
 
 // ═══════════════════════════════════════════════
 // GAME ENGINE
@@ -510,6 +582,7 @@ class Game{
     this.paused=false;this.done=false;
     this.bOff=0;this.pLog=['Initialising…'];this.fb=[];
     this.aAng=0;this.aTgt=0;
+    this.scanPause = 0;
     this.lastT=null;this.raf=null;
 
     this._kb=e=>this._key(e);
@@ -560,6 +633,11 @@ class Game{
   }
 
   _update(dt){
+    if(this.scanPause > 0){
+      this.scanPause -= dt;
+      this._draw();
+      return;
+    }
     const mv=this.spd*68*dt*this.s;
     this.bOff=(this.bOff+mv)%38;
 
@@ -573,6 +651,7 @@ class Game{
       it.x-=mv;it.age+=dt;
       if(it.ft>0)it.ft-=dt;else if(it.ft<0)it.ft+=dt;
       if(!it.clf&&it.x<=this.SX){
+        this.scanPause = 1.1;
         it.clf=true;
         this.pLog=['Stage 1: frame captured','Stage 2: preprocessing…'];
         const r=this.pipe.process(it.cls);
@@ -607,7 +686,10 @@ class Game{
     }
     const bins=['recycle','organic','metal','reject'];
     this.aTgt=[-45,-15,15,45][bins.indexOf(res.predictedBin)]??0;
-    this.pLog=res.stageLog.slice(-6);
+    this.pLog = [
+      'AI scanner active',
+      ...res.stageLog.slice(-5)
+    ];
   }
 
   _draw(){
@@ -616,7 +698,14 @@ class Game{
     g.fillStyle='#12120f';g.fillRect(0,0,W,H);
     this._dHeader();this._dBelt();this._dItems();
     this._dScan();this._dArm();this._dBins();
-    this._dLog();this._dStats();this._dFb();this._dHint();
+    this._dLog();
+    this._dStats();
+    this._dFb();
+
+    const activeItem=this.items.find(i=>i.result);
+    this._dAnalysisPanel(activeItem);
+
+    this._dHint();
   }
 
   _dHeader(){
@@ -726,7 +815,6 @@ class Game{
       g.fillText(cnt,cx,cy+14*s);g.textAlign='left';
     }
   }
-
   _dLog(){
     const{g,s,PY,PH,LW}=this;
     const px=10*s;
@@ -741,6 +829,82 @@ class Game{
       g.fillText(lines[i].slice(0,42),px+10*s,PY+28*s+i*16*s);
     }
   }
+  _dAnalysisPanel(item){
+
+  if(!item || !item.result) return;
+
+  const {g,s,W} = this;
+
+  const x = W - 280*s;
+  const y = 60*s;
+  const w = 250*s;
+  const h = 200*s;
+
+  g.fillStyle = '#141418';
+  rr(g,x,y,w,h,8*s);
+  g.fill();
+
+  g.strokeStyle = '#303040';
+  g.lineWidth = 1;
+  g.stroke();
+
+   g.font = `700 ${11*s}px Barlow,sans-serif`;
+  g.fillStyle = '#1d9e75';
+  g.fillText('AI ANALYSIS',x+14*s,y+20*s);
+
+  g.drawImage(item.img,x+14*s,y+35*s,70*s,70*s);
+
+  // fake edge-analysis visualization
+
+  g.strokeStyle = '#ffffff22';
+
+  for(let i=0;i<12;i++){
+    g.beginPath();
+    g.moveTo(x+100*s,y+85*s+i*3*s);
+    g.lineTo(x+180*s,y+85*s+i*2*s);
+    g.stroke();
+  }
+
+  // confidence bar
+
+  g.fillStyle='#222';
+  g.fillRect(x+14*s,y+112*s,200*s,8*s);
+
+  g.fillStyle='#1d9e75';
+  g.fillRect(
+    x+14*s,
+    y+112*s,
+    200*s*item.result.confidence,
+    8*s
+  );
+
+  g.font = `${9*s}px 'Share Tech Mono',monospace`;
+  g.fillStyle = '#efefef';
+
+  g.fillText(
+    `Prediction: ${item.result.prediction}`,
+    x+14*s,
+    y+138*s
+  );
+   g.fillText(
+    `Confidence: ${(item.result.confidence*100).toFixed(0)}%`,
+    x+14*s,
+    y+154*s
+  );
+
+  g.fillStyle = '#888';
+  g.fillText('WHY THIS PREDICTION:',x+14*s,y+176*s);
+
+  g.fillStyle = '#1d9e75';
+
+  item.result.reasoning.forEach((r,i)=>{
+    g.fillText(
+      '• '+r,
+      x+20*s,
+      y+192*s+i*14*s
+    );
+  });
+}
 
   _dStats(){
     const{g,s,PY,PH,SX2,W}=this;
@@ -820,7 +984,8 @@ document.getElementById('start-btn').addEventListener('click',()=>{
   document.getElementById('pause-overlay').classList.remove('active');
   const cv=document.getElementById('canvas');
   if(G)G.stop();
-  G=new Game(cv,{...opts});G.start();
+  G = new Game(cv,{...opts});
+  G.start();
 });
 document.getElementById('restart-btn').addEventListener('click',()=>{
   document.getElementById('end-screen').classList.remove('active');
