@@ -6,1072 +6,823 @@
 <title>SortBot — Vision Sorting System</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&display=swap');
-
-  :root {
-    --bg:          #12120f;
-    --bg2:         #1a1a17;
-    --bg3:         #222220;
-    --belt-dark:   #222226;
-    --belt-stripe: #2b2b30;
-    --white:       #f0f0eb;
-    --muted:       #7a7872;
-    --green:       #1d9e75;
-    --green-dim:   #0d4a36;
-    --red:         #e24b4a;
-    --red-dim:     #5a1a1a;
-    --amber:       #ef9f27;
-    --blue:        #378add;
-    --blue-dim:    #0e2d52;
-    --purple:      #7f77dd;
-    --purple-dim:  #2a2356;
-    --scan:        #1d9e75;
-  }
-
-  * { margin:0; padding:0; box-sizing:border-box; }
-
-  body {
-    background: var(--bg);
-    color: var(--white);
-    font-family: 'Barlow', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0;
-    overflow: hidden;
-  }
-
-  #app {
-    width: 100vw;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* ── MENU SCREEN ── */
-  #menu {
-    position: absolute; inset: 0;
-    background: var(--bg);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0;
-    z-index: 100;
-  }
-
-  #menu.hidden { display: none; }
-
-  .menu-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1px;
-    background: var(--bg3);
-    border: 1px solid var(--bg3);
-    width: min(480px, 90vw);
-    margin: 28px 0 0 0;
-  }
-
-  .menu-cell {
-    background: var(--bg2);
-    padding: 18px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .menu-cell label {
-    font-size: 10px;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    color: var(--muted);
-    font-weight: 600;
-  }
-
-  .opt-row { display: flex; gap: 6px; flex-wrap: wrap; }
-
-  .opt-btn {
-    background: var(--bg3);
-    border: 1px solid #333;
-    color: var(--muted);
-    font-family: 'Barlow', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    padding: 5px 14px;
-    cursor: pointer;
-    transition: all .15s;
-    letter-spacing: .04em;
-  }
-
-  .opt-btn:hover { border-color: var(--muted); color: var(--white); }
-  .opt-btn.active { background: var(--green-dim); border-color: var(--green); color: var(--green); }
-
-  .menu-logo {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: clamp(32px, 5vw, 52px);
-    letter-spacing: .05em;
-    color: var(--white);
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    line-height: 1;
-  }
-
-  .menu-logo span { color: var(--green); }
-
-  .menu-sub {
-    font-size: 12px;
-    color: var(--muted);
-    letter-spacing: .12em;
-    text-transform: uppercase;
-    margin-top: 6px;
-  }
-
-  #start-btn {
-    margin-top: 24px;
-    background: var(--green);
-    border: none;
-    color: #000;
-    font-family: 'Barlow', sans-serif;
-    font-weight: 700;
-    font-size: 15px;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-    padding: 14px 56px;
-    cursor: pointer;
-    transition: all .15s;
-    width: min(480px, 90vw);
-  }
-
-  #start-btn:hover { background: #24bf8d; }
-
-  .acc-table {
-    margin-top: 28px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    line-height: 2;
-    text-align: center;
-  }
-
-  /* ── GAME CANVAS WRAPPER ── */
-  #game-wrap {
-    width: 100vw; height: 100vh;
-    display: none;
-    flex-direction: column;
-  }
-
-  #game-wrap.active { display: flex; }
-
-  canvas {
-    display: block;
-    flex: 1;
-    width: 100%;
-    height: 100%;
-    image-rendering: pixelated;
-  }
-
-  /* ── HUD overlay ── */
-  #hud {
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    pointer-events: none;
-    padding: 10px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    z-index: 10;
-  }
-
-  /* ── END SCREEN ── */
-  #end-screen {
-    position: absolute; inset: 0;
-    background: rgba(18,18,15,.96);
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 200;
-  }
-
-  #end-screen.active { display: flex; }
-
-  .end-title {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 28px;
-    color: var(--green);
-    letter-spacing: .1em;
-    margin-bottom: 8px;
-  }
-
-  .end-score {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 56px;
-    color: var(--white);
-    line-height: 1;
-  }
-
-  .end-sub {
-    font-size: 12px;
-    color: var(--muted);
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    margin-top: 4px;
-    margin-bottom: 24px;
-  }
-
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1px;
-    background: var(--bg3);
-    border: 1px solid var(--bg3);
-    margin-bottom: 24px;
-    width: min(580px, 92vw);
-  }
-
-  .stat-cell {
-    background: var(--bg2);
-    padding: 14px 18px;
-    text-align: center;
-  }
-
-  .stat-cell .s-label {
-    font-size: 9px;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 6px;
-  }
-
-  .stat-cell .s-val {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 22px;
-    color: var(--white);
-  }
-
-  .per-class-grid {
-    width: min(580px, 92vw);
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-bottom: 24px;
-  }
-
-  .cls-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px;
-  }
-
-  .cls-name { width: 90px; color: var(--muted); }
-  .cls-bar-bg { flex: 1; height: 6px; background: var(--bg3); }
-  .cls-bar { height: 100%; background: var(--green); transition: width .6s; }
-  .cls-pct { width: 40px; text-align: right; color: var(--white); }
-
-  #restart-btn {
-    background: transparent;
-    border: 1px solid var(--green);
-    color: var(--green);
-    font-family: 'Barlow', sans-serif;
-    font-weight: 700;
-    font-size: 13px;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-    padding: 12px 44px;
-    cursor: pointer;
-    transition: all .15s;
-  }
-
-  #restart-btn:hover { background: var(--green); color: #000; }
-
-  /* ── PAUSE OVERLAY ── */
-  #pause-overlay {
-    position: absolute; inset: 0;
-    background: rgba(18,18,15,.5);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 50;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 36px;
-    color: var(--amber);
-    letter-spacing: .2em;
-    pointer-events: none;
-  }
-
-  #pause-overlay.active { display: flex; }
+  :root{--bg:#12120f;--bg2:#1a1a17;--bg3:#222220;--white:#f0f0eb;--muted:#7a7872;--green:#1d9e75;--green-dim:#0d4a36;--red:#e24b4a;--red-dim:#5a1a1a;--amber:#ef9f27;--blue:#378add;--blue-dim:#0e2d52;--purple:#7f77dd;--purple-dim:#2a2356;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--white);font-family:'Barlow',sans-serif;overflow:hidden;height:100vh;width:100vw;}
+  #menu{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;}
+  #menu.hidden{display:none;}
+  .menu-logo{font-family:'Share Tech Mono',monospace;font-size:clamp(28px,4vw,52px);letter-spacing:.05em;}
+  .menu-logo span{color:var(--green);}
+  .menu-sub{font-size:11px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-top:5px;margin-bottom:22px;}
+  .menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--bg3);border:1px solid var(--bg3);width:min(480px,90vw);}
+  .menu-cell{background:var(--bg2);padding:16px 18px;display:flex;flex-direction:column;gap:8px;}
+  .menu-cell label{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;}
+  .opt-row{display:flex;gap:5px;flex-wrap:wrap;}
+  .opt-btn{background:var(--bg3);border:1px solid #333;color:var(--muted);font-family:'Barlow',sans-serif;font-size:12px;font-weight:600;padding:4px 12px;cursor:pointer;transition:all .15s;letter-spacing:.04em;}
+  .opt-btn:hover{border-color:var(--muted);color:var(--white);}
+  .opt-btn.active{background:var(--green-dim);border-color:var(--green);color:var(--green);}
+  #start-btn{margin-top:18px;background:var(--green);border:none;color:#000;font-family:'Barlow',sans-serif;font-weight:700;font-size:14px;letter-spacing:.1em;text-transform:uppercase;padding:13px 52px;cursor:pointer;transition:all .15s;width:min(480px,90vw);}
+  #start-btn:hover{background:#24bf8d;}
+  .acc-table{margin-top:20px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);line-height:2;text-align:center;}
+  #game-wrap{position:absolute;inset:0;display:none;}
+  #game-wrap.active{display:block;}
+  canvas{display:block;width:100%;height:100%;}
+  #pause-overlay{position:absolute;inset:0;background:rgba(18,18,15,.5);display:none;align-items:center;justify-content:center;z-index:50;font-family:'Share Tech Mono',monospace;font-size:36px;color:var(--amber);letter-spacing:.2em;pointer-events:none;}
+  #pause-overlay.active{display:flex;}
+  #end-screen{position:absolute;inset:0;background:rgba(18,18,15,.97);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:200;}
+  #end-screen.active{display:flex;}
+  .end-title{font-family:'Share Tech Mono',monospace;font-size:24px;color:var(--green);letter-spacing:.1em;margin-bottom:6px;}
+  .end-score{font-family:'Share Tech Mono',monospace;font-size:54px;color:var(--white);line-height:1;}
+  .end-sub{font-size:11px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-top:4px;margin-bottom:20px;}
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--bg3);border:1px solid var(--bg3);margin-bottom:18px;width:min(560px,92vw);}
+  .stat-cell{background:var(--bg2);padding:12px 16px;text-align:center;}
+  .stat-cell .s-label{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+  .stat-cell .s-val{font-family:'Share Tech Mono',monospace;font-size:20px;color:var(--white);}
+  .per-class-grid{width:min(560px,92vw);display:flex;flex-direction:column;gap:4px;margin-bottom:20px;max-height:200px;overflow-y:auto;}
+  .cls-row{display:flex;align-items:center;gap:8px;font-family:'Share Tech Mono',monospace;font-size:11px;}
+  .cls-name{width:88px;color:var(--muted);}
+  .cls-bar-bg{flex:1;height:5px;background:var(--bg3);}
+  .cls-bar{height:100%;transition:width .6s;}
+  .cls-pct{width:38px;text-align:right;color:var(--white);}
+  #restart-btn{background:transparent;border:1px solid var(--green);color:var(--green);font-family:'Barlow',sans-serif;font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase;padding:11px 40px;cursor:pointer;transition:all .15s;}
+  #restart-btn:hover{background:var(--green);color:#000;}
 </style>
 </head>
 <body>
-<div id="app">
 
-  <!-- MENU -->
-  <div id="menu">
-    <div class="menu-logo">Sort<span>Bot</span></div>
-    <div class="menu-sub">Vision-Based Sorting System</div>
-
-    <div class="menu-grid">
-      <div class="menu-cell">
-        <label>Classifier</label>
-        <div class="opt-row" id="clf-opts">
-          <button class="opt-btn active" data-val="color">COLOR</button>
-          <button class="opt-btn" data-val="hog">HOG</button>
-          <button class="opt-btn" data-val="ml">ML</button>
-        </div>
-      </div>
-      <div class="menu-cell">
-        <label>Belt Speed</label>
-        <div class="opt-row" id="speed-opts">
-          <button class="opt-btn" data-val="1">1</button>
-          <button class="opt-btn active" data-val="2">2</button>
-          <button class="opt-btn" data-val="3">3</button>
-          <button class="opt-btn" data-val="4">4</button>
-          <button class="opt-btn" data-val="5">5</button>
-        </div>
-      </div>
-      <div class="menu-cell">
-        <label>Noise Level</label>
-        <div class="opt-row" id="noise-opts">
-          <button class="opt-btn active" data-val="0">OFF</button>
-          <button class="opt-btn" data-val="1">1</button>
-          <button class="opt-btn" data-val="2">2</button>
-          <button class="opt-btn" data-val="3">3</button>
-          <button class="opt-btn" data-val="4">4</button>
-        </div>
-      </div>
-      <div class="menu-cell">
-        <label>Batch Size</label>
-        <div class="opt-row" id="batch-opts">
-          <button class="opt-btn" data-val="20">20</button>
-          <button class="opt-btn active" data-val="40">40</button>
-          <button class="opt-btn" data-val="60">60</button>
-          <button class="opt-btn" data-val="80">80</button>
-        </div>
-      </div>
-    </div>
-
-    <button id="start-btn">START SESSION</button>
-
-    <div class="acc-table">
-      COLOR ~72% acc · 8–18ms  |  HOG ~83% · 22–40ms  |  ML ~94% · 55–95ms
-    </div>
+<div id="menu">
+  <div class="menu-logo">Sort<span>Bot</span></div>
+  <div class="menu-sub">Vision-Based Sorting System</div>
+  <div class="menu-grid">
+    <div class="menu-cell"><label>Classifier</label>
+      <div class="opt-row" id="clf-opts">
+        <button class="opt-btn active" data-val="color">COLOR</button>
+        <button class="opt-btn" data-val="hog">HOG</button>
+        <button class="opt-btn" data-val="ml">ML</button>
+      </div></div>
+    <div class="menu-cell"><label>Belt Speed</label>
+      <div class="opt-row" id="speed-opts">
+        <button class="opt-btn" data-val="1">1</button>
+        <button class="opt-btn active" data-val="2">2</button>
+        <button class="opt-btn" data-val="3">3</button>
+        <button class="opt-btn" data-val="4">4</button>
+        <button class="opt-btn" data-val="5">5</button>
+      </div></div>
+    <div class="menu-cell"><label>Noise Level</label>
+      <div class="opt-row" id="noise-opts">
+        <button class="opt-btn active" data-val="0">OFF</button>
+        <button class="opt-btn" data-val="1">1</button>
+        <button class="opt-btn" data-val="2">2</button>
+        <button class="opt-btn" data-val="3">3</button>
+        <button class="opt-btn" data-val="4">4</button>
+      </div></div>
+    <div class="menu-cell"><label>Batch Size</label>
+      <div class="opt-row" id="batch-opts">
+        <button class="opt-btn" data-val="20">20</button>
+        <button class="opt-btn active" data-val="40">40</button>
+        <button class="opt-btn" data-val="60">60</button>
+        <button class="opt-btn" data-val="80">80</button>
+      </div></div>
   </div>
+  <button id="start-btn">START SESSION</button>
+  <div class="acc-table">COLOR ~72% · 8–18ms &nbsp;|&nbsp; HOG ~83% · 22–40ms &nbsp;|&nbsp; ML ~94% · 55–95ms</div>
+</div>
 
-  <!-- GAME -->
-  <div id="game-wrap">
-    <canvas id="canvas"></canvas>
-    <div id="hud">
-      <span id="hud-left"></span>
-      <span>SPACE pause · 1-5 speed · Q quit</span>
-    </div>
+<div id="game-wrap"><canvas id="canvas"></canvas></div>
+<div id="pause-overlay">PAUSED</div>
+<div id="end-screen">
+  <div class="end-title">SESSION COMPLETE</div>
+  <div class="end-score" id="end-score">0</div>
+  <div class="end-sub">points</div>
+  <div class="stats-grid">
+    <div class="stat-cell"><div class="s-label">Sorted</div><div class="s-val" id="es-sorted">0</div></div>
+    <div class="stat-cell"><div class="s-label">Accuracy</div><div class="s-val" id="es-acc">0%</div></div>
+    <div class="stat-cell"><div class="s-label">Best Streak</div><div class="s-val" id="es-streak">0</div></div>
+    <div class="stat-cell"><div class="s-label">Avg Latency</div><div class="s-val" id="es-lat">0ms</div></div>
   </div>
-
-  <!-- PAUSE -->
-  <div id="pause-overlay">PAUSED</div>
-
-  <!-- END -->
-  <div id="end-screen">
-    <div class="end-title">SESSION COMPLETE</div>
-    <div class="end-score" id="end-score">0</div>
-    <div class="end-sub">points</div>
-    <div class="stats-grid">
-      <div class="stat-cell"><div class="s-label">Sorted</div><div class="s-val" id="es-sorted">0</div></div>
-      <div class="stat-cell"><div class="s-label">Accuracy</div><div class="s-val" id="es-acc">0%</div></div>
-      <div class="stat-cell"><div class="s-label">Best Streak</div><div class="s-val" id="es-streak">0</div></div>
-      <div class="stat-cell"><div class="s-label">Avg Latency</div><div class="s-val" id="es-lat">0ms</div></div>
-    </div>
-    <div class="per-class-grid" id="per-class-grid"></div>
-    <button id="restart-btn">PLAY AGAIN</button>
-  </div>
-
+  <div class="per-class-grid" id="per-class-grid"></div>
+  <button id="restart-btn">PLAY AGAIN</button>
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════
-// SortBot Web — faithful JS port of the Python pygame version
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════
+const CLASSES=['airplane','automobile','bird','cat','deer','dog','frog','horse','ship','truck'];
+const TO_BIN={airplane:'recycle',automobile:'recycle',bird:'organic',cat:'organic',deer:'organic',dog:'organic',frog:'organic',horse:'organic',ship:'metal',truck:'metal'};
+const DEFECT=new Set(['frog','deer']);
+const getBin=c=>DEFECT.has(c)?'reject':(TO_BIN[c]||'reject');
+const CLF_ACC={color:.72,hog:.83,ml:.94};
+const NOISE_PEN=[0,.06,.14,.24,.38];
+const LAT_MS={color:[8,18],hog:[22,40],ml:[55,95]};
+const BIN_COL={recycle:'#378add',organic:'#1d9e75',metal:'#7f77dd',reject:'#e24b4a'};
+const BIN_DIM={recycle:'#0a2040',organic:'#082e20',metal:'#1a1840',reject:'#3a1010'};
+const BIN_LBL={recycle:'♻ Recycle',organic:'🌿 Organic',metal:'⚙ Metal',reject:'✕ Reject'};
 
-// ── Constants ────────────────────────────────────────────────────
-const CIFAR_CLASSES = [
-  "airplane","automobile","bird","cat","deer",
-  "dog","frog","horse","ship","truck"
-];
+// ═══════════════════════════════════════════════
+// IMAGE GENERATOR — recognisable pixel-art per class
+// ═══════════════════════════════════════════════
+const IMG_CACHE={};
+function makeImg(cls){
+  if(IMG_CACHE[cls]) return IMG_CACHE[cls];
+  const SZ=64;
+  const c=document.createElement('canvas');
+  c.width=c.height=SZ;
+  const g=c.getContext('2d');
+  const cx=SZ/2, cy=SZ/2;
 
-const CLASS_TO_BIN = {
-  airplane:"recycle", automobile:"recycle",
-  bird:"organic", cat:"organic", deer:"organic",
-  dog:"organic", frog:"organic", horse:"organic",
-  ship:"metal", truck:"metal"
-};
-
-const DEFECT_CLASSES = new Set(["frog","deer"]);
-
-function getBin(cls) {
-  if (DEFECT_CLASSES.has(cls)) return "reject";
-  return CLASS_TO_BIN[cls] || "reject";
-}
-
-const CLASSIFIER_ACCURACY = { color:0.72, hog:0.83, ml:0.94 };
-const NOISE_PENALTY = [0, 0.06, 0.14, 0.24, 0.38];
-const LATENCY_MS = { color:[8,18], hog:[22,40], ml:[55,95] };
-
-const CLASS_COLOURS = {
-  airplane:[160,180,220], automobile:[220,80,80],
-  bird:[100,180,100],     cat:[220,180,100],
-  deer:[160,120,80],      dog:[200,150,100],
-  frog:[60,180,60],       horse:[120,80,40],
-  ship:[80,120,200],      truck:[180,100,60],
-};
-
-const BIN_COLORS = {
-  recycle: "#378add",
-  organic: "#1d9e75",
-  metal:   "#7f77dd",
-  reject:  "#e24b4a",
-};
-
-const BIN_DIM = {
-  recycle: "#0e2d52",
-  organic: "#0d4a36",
-  metal:   "#2a2356",
-  reject:  "#5a1a1a",
-};
-
-// ── Synthetic image generator (no CIFAR download needed) ─────────
-function makeSyntheticImage(cls, size=32) {
-  const oc = document.createElement('canvas');
-  oc.width = oc.height = size;
-  const ctx = oc.getContext('2d');
-
-  const [r,g,b] = CLASS_COLOURS[cls];
-
-  // noisy background
-  const id = ctx.createImageData(size, size);
-  for (let i=0; i<id.data.length; i+=4) {
-    const n = Math.random()*40-20;
-    id.data[i]   = Math.max(0,Math.min(255, r+n));
-    id.data[i+1] = Math.max(0,Math.min(255, g+n));
-    id.data[i+2] = Math.max(0,Math.min(255, b+n));
-    id.data[i+3] = 255;
-  }
-  ctx.putImageData(id, 0, 0);
-
-  // draw a distinctive shape per class
-  ctx.globalAlpha = 0.55;
-  const cx = size/2, cy = size/2;
-  const shapes = {
-    airplane:   () => { ctx.fillStyle="#aad"; ctx.beginPath(); ctx.moveTo(cx,cy-10); ctx.lineTo(cx+12,cy+2); ctx.lineTo(cx+6,cy+6); ctx.lineTo(cx,cy+4); ctx.lineTo(cx-6,cy+6); ctx.lineTo(cx-12,cy+2); ctx.closePath(); ctx.fill(); },
-    automobile: () => { ctx.fillStyle="#f66"; ctx.fillRect(cx-10,cy-4,20,10); ctx.fillRect(cx-7,cy-10,14,8); },
-    bird:       () => { ctx.fillStyle="#7d7"; ctx.beginPath(); ctx.ellipse(cx,cy,8,5,-.4,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.ellipse(cx+6,cy-4,4,2.5,-.7,0,Math.PI*2); ctx.fill(); },
-    cat:        () => { ctx.fillStyle="#eda"; ctx.beginPath(); ctx.arc(cx,cy,8,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#ec9"; ctx.fillRect(cx-10,cy-12,5,6); ctx.fillRect(cx+5,cy-12,5,6); },
-    deer:       () => { ctx.fillStyle="#a85"; ctx.beginPath(); ctx.arc(cx,cy+2,7,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#a85"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(cx-4,cy-5); ctx.lineTo(cx-8,cy-14); ctx.moveTo(cx+4,cy-5); ctx.lineTo(cx+8,cy-14); ctx.stroke(); },
-    dog:        () => { ctx.fillStyle="#c96"; ctx.beginPath(); ctx.ellipse(cx,cy+1,9,7,0,0,Math.PI*2); ctx.fill(); ctx.fillRect(cx-10,cy-3,4,8); ctx.fillRect(cx+6,cy-3,4,8); },
-    frog:       () => { ctx.fillStyle="#3b3"; ctx.beginPath(); ctx.arc(cx,cy+2,8,0,Math.PI*2); ctx.fill(); ctx.arc(cx-7,cy-6,4,0,Math.PI*2); ctx.fill(); ctx.arc(cx+7,cy-6,4,0,Math.PI*2); ctx.fill(); },
-    horse:      () => { ctx.fillStyle="#752"; ctx.fillRect(cx-4,cy-12,8,16); ctx.beginPath(); ctx.ellipse(cx,cy+4,7,5,0,0,Math.PI*2); ctx.fill(); },
-    ship:       () => { ctx.fillStyle="#58c"; ctx.beginPath(); ctx.moveTo(cx-12,cy+4); ctx.lineTo(cx+12,cy+4); ctx.lineTo(cx+8,cy-6); ctx.lineTo(cx-8,cy-6); ctx.closePath(); ctx.fill(); ctx.fillRect(cx-1,cy-14,3,10); },
-    truck:      () => { ctx.fillStyle="#b64"; ctx.fillRect(cx-12,cy-6,24,12); ctx.fillRect(cx-12,cy-10,10,6); ctx.fillStyle="#333"; ctx.beginPath(); ctx.arc(cx-8,cy+8,3,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(cx+6,cy+8,3,0,Math.PI*2); ctx.fill(); },
+  // background gradients per class
+  const bgs={
+    airplane:['#7aa8d8','#4470a8'],automobile:['#c85050','#902828'],
+    bird:['#70a870','#3a7040'],cat:['#c8a060','#906028'],
+    deer:['#b09050','#785820'],dog:['#c09050','#885830'],
+    frog:['#38a838','#1a6a1a'],horse:['#785030','#4a2810'],
+    ship:['#4880c0','#1a4880'],truck:['#c07030','#804020'],
   };
-  (shapes[cls] || (() => {}))();
-  ctx.globalAlpha = 1;
-  return oc;
+  const [c1,c2]=bgs[cls]||['#666','#333'];
+  const gr=g.createLinearGradient(0,0,SZ,SZ);
+  gr.addColorStop(0,c1); gr.addColorStop(1,c2);
+  g.fillStyle=gr; g.fillRect(0,0,SZ,SZ);
+
+  // subtle noise
+  const id=g.getImageData(0,0,SZ,SZ);
+  for(let i=0;i<id.data.length;i+=4){
+    const n=(Math.random()-.5)*18;
+    id.data[i]=Math.max(0,Math.min(255,id.data[i]+n));
+    id.data[i+1]=Math.max(0,Math.min(255,id.data[i+1]+n));
+    id.data[i+2]=Math.max(0,Math.min(255,id.data[i+2]+n));
+  }
+  g.putImageData(id,0,0);
+
+  g.save(); g.translate(cx,cy);
+
+  ({
+    airplane(){
+      // fuselage
+      g.fillStyle='#e8eef8';
+      g.beginPath(); g.ellipse(0,0,22,7,0,0,Math.PI*2); g.fill();
+      // wings
+      g.fillStyle='#c0d0e8';
+      g.beginPath(); g.moveTo(-5,-4); g.lineTo(-22,14); g.lineTo(8,4); g.closePath(); g.fill();
+      g.beginPath(); g.moveTo(-5,4); g.lineTo(-22,-14); g.lineTo(8,-4); g.closePath(); g.fill();
+      // tail fin
+      g.fillStyle='#a8c0d8';
+      g.beginPath(); g.moveTo(16,-2); g.lineTo(24,-12); g.lineTo(24,0); g.closePath(); g.fill();
+      // cockpit window
+      g.fillStyle='#90d8f8';
+      g.beginPath(); g.ellipse(-10,0,6,5,0,0,Math.PI*2); g.fill();
+      // engine
+      g.fillStyle='#d0d8e8';
+      g.beginPath(); g.ellipse(-2,10,3,6,0,0,Math.PI*2); g.fill();
+    },
+    automobile(){
+      // body lower
+      g.fillStyle='#e83030';
+      g.beginPath(); g.roundRect(-20,2,40,14,4); g.fill();
+      // body upper
+      g.fillStyle='#c81818';
+      g.beginPath(); g.roundRect(-14,-12,28,15,6); g.fill();
+      // windshield
+      g.fillStyle='#90d0f8';
+      g.beginPath(); g.roundRect(-11,-10,12,10,2); g.fill();
+      // rear window
+      g.beginPath(); g.roundRect(2,-10,10,10,2); g.fill();
+      // wheels
+      [[-13,16],[13,16]].forEach(([wx,wy])=>{
+        g.fillStyle='#1a1a1a'; g.beginPath(); g.arc(wx,wy,7,0,Math.PI*2); g.fill();
+        g.fillStyle='#606060'; g.beginPath(); g.arc(wx,wy,3.5,0,Math.PI*2); g.fill();
+        g.fillStyle='#909090'; g.beginPath(); g.arc(wx,wy,1.5,0,Math.PI*2); g.fill();
+      });
+      // headlights
+      g.fillStyle='#ffee80'; g.fillRect(-22,4,5,4);
+      g.fillStyle='#ff8888'; g.fillRect(18,4,4,4);
+      // door line
+      g.strokeStyle='#a01010'; g.lineWidth=1.2;
+      g.beginPath(); g.moveTo(-2,-8); g.lineTo(-2,14); g.stroke();
+    },
+    bird(){
+      // body
+      g.fillStyle='#e06020';
+      g.beginPath(); g.ellipse(4,4,16,11,-.2,0,Math.PI*2); g.fill();
+      // head
+      g.fillStyle='#f07030';
+      g.beginPath(); g.arc(-12,-10,10,0,Math.PI*2); g.fill();
+      // wing
+      g.fillStyle='#b84010';
+      g.beginPath(); g.moveTo(4,-2); g.lineTo(24,-14); g.lineTo(20,8); g.closePath(); g.fill();
+      g.fillStyle='#d05018';
+      g.beginPath(); g.moveTo(4,-2); g.lineTo(18,-10); g.lineTo(14,6); g.closePath(); g.fill();
+      // tail
+      g.fillStyle='#a03808';
+      g.beginPath(); g.moveTo(18,8); g.lineTo(28,14); g.lineTo(20,16); g.closePath(); g.fill();
+      // eye
+      g.fillStyle='#111'; g.beginPath(); g.arc(-14,-12,3,0,Math.PI*2); g.fill();
+      g.fillStyle='#fff'; g.beginPath(); g.arc(-15,-13,1.2,0,Math.PI*2); g.fill();
+      // beak
+      g.fillStyle='#f0c020';
+      g.beginPath(); g.moveTo(-21,-9); g.lineTo(-28,-7); g.lineTo(-21,-4); g.closePath(); g.fill();
+    },
+    cat(){
+      // body
+      g.fillStyle='#c8a060';
+      g.beginPath(); g.ellipse(2,10,16,13,0,0,Math.PI*2); g.fill();
+      // head
+      g.beginPath(); g.arc(-2,-8,15,0,Math.PI*2); g.fill();
+      // ears
+      g.fillStyle='#b08040';
+      g.beginPath(); g.moveTo(-16,-20); g.lineTo(-22,-32); g.lineTo(-6,-22); g.closePath(); g.fill();
+      g.beginPath(); g.moveTo(10,-20); g.lineTo(18,-32); g.lineTo(6,-22); g.closePath(); g.fill();
+      g.fillStyle='#e09090';
+      g.beginPath(); g.moveTo(-15,-22); g.lineTo(-20,-30); g.lineTo(-7,-24); g.closePath(); g.fill();
+      g.beginPath(); g.moveTo(10,-22); g.lineTo(16,-30); g.lineTo(7,-24); g.closePath(); g.fill();
+      // eyes
+      g.fillStyle='#48c048';
+      [-7,5].forEach(ex=>{ g.beginPath(); g.ellipse(ex,-8,5,4,0,0,Math.PI*2); g.fill(); });
+      g.fillStyle='#111';
+      [-7,5].forEach(ex=>{ g.beginPath(); g.ellipse(ex,-8,2,4,0,0,Math.PI*2); g.fill(); });
+      g.fillStyle='rgba(255,255,255,.5)';
+      [-7,5].forEach(ex=>{ g.beginPath(); g.arc(ex-1,-9,1.2,0,Math.PI*2); g.fill(); });
+      // nose
+      g.fillStyle='#e05878'; g.beginPath(); g.arc(-2,-2,3,0,Math.PI*2); g.fill();
+      // whiskers
+      g.strokeStyle='rgba(255,255,255,.55)'; g.lineWidth=.9;
+      [[-1,-1],[-1,-3],[1,-1],[1,-3]].forEach(([dx,dy])=>{
+        g.beginPath(); g.moveTo(dx*2,dy*2); g.lineTo(dx*18,dy*4); g.stroke();
+      });
+      // tail
+      g.strokeStyle='#b08040'; g.lineWidth=4; g.lineCap='round';
+      g.beginPath(); g.moveTo(16,18); g.quadraticCurveTo(28,10,24,-4); g.stroke();
+      g.lineCap='butt';
+    },
+    deer(){
+      // body
+      g.fillStyle='#9a6830';
+      g.beginPath(); g.ellipse(2,8,16,12,0,0,Math.PI*2); g.fill();
+      // neck
+      g.beginPath(); g.ellipse(-6,-4,8,12,.4,0,Math.PI*2); g.fill();
+      // head
+      g.beginPath(); g.ellipse(-10,-16,10,8,.2,0,Math.PI*2); g.fill();
+      // antlers
+      g.strokeStyle='#6a4018'; g.lineWidth=2.5; g.lineCap='round';
+      // left antler
+      g.beginPath(); g.moveTo(-14,-23); g.lineTo(-18,-34); g.stroke();
+      g.beginPath(); g.moveTo(-18,-30); g.lineTo(-24,-26); g.stroke();
+      g.beginPath(); g.moveTo(-16,-32); g.lineTo(-12,-27); g.stroke();
+      // right antler
+      g.beginPath(); g.moveTo(-6,-23); g.lineTo(-4,-34); g.stroke();
+      g.beginPath(); g.moveTo(-4,-30); g.lineTo(2,-26); g.stroke();
+      g.beginPath(); g.moveTo(-5,-32); g.lineTo(-9,-27); g.stroke();
+      g.lineCap='butt';
+      // legs
+      g.fillStyle='#7a5020';
+      [[-8,18],[-2,18],[6,18],[12,18]].forEach(([lx,ly])=>g.fillRect(lx-2.5,ly,5,14));
+      // white belly
+      g.fillStyle='rgba(255,240,200,.4)';
+      g.beginPath(); g.ellipse(2,12,8,7,0,0,Math.PI*2); g.fill();
+      // eye
+      g.fillStyle='#111'; g.beginPath(); g.arc(-13,-18,2.5,0,Math.PI*2); g.fill();
+      g.fillStyle='rgba(255,255,255,.6)'; g.beginPath(); g.arc(-14,-19,1,0,Math.PI*2); g.fill();
+    },
+    dog(){
+      // body
+      g.fillStyle='#c08848';
+      g.beginPath(); g.ellipse(4,6,17,12,0,0,Math.PI*2); g.fill();
+      // head
+      g.beginPath(); g.ellipse(-6,-8,14,12,0,0,Math.PI*2); g.fill();
+      // ears (floppy)
+      g.fillStyle='#a07030';
+      g.beginPath(); g.ellipse(-18,-8,6,11,-.3,0,Math.PI*2); g.fill();
+      g.beginPath(); g.ellipse(6,-14,6,9,.3,0,Math.PI*2); g.fill();
+      // snout
+      g.fillStyle='#d8a870';
+      g.beginPath(); g.ellipse(-6,-2,8,6,0,0,Math.PI*2); g.fill();
+      // nose
+      g.fillStyle='#222'; g.beginPath(); g.arc(-6,-3,4,0,Math.PI*2); g.fill();
+      g.fillStyle='#555'; g.beginPath(); g.arc(-6,-3,2,0,Math.PI*2); g.fill();
+      // eyes
+      g.fillStyle='#3a2010';
+      [-12,2].forEach(ex=>{ g.beginPath(); g.arc(ex,-12,4,0,Math.PI*2); g.fill(); });
+      g.fillStyle='rgba(255,255,255,.5)';
+      [-12,2].forEach(ex=>{ g.beginPath(); g.arc(ex-1,-13,1.5,0,Math.PI*2); g.fill(); });
+      // tail
+      g.strokeStyle='#c08848'; g.lineWidth=5; g.lineCap='round';
+      g.beginPath(); g.moveTo(20,0); g.quadraticCurveTo(30,-12,26,-22); g.stroke();
+      // legs
+      g.fillStyle='#a07030';
+      [[-10,16],[-2,16],[10,16],[18,16]].forEach(([lx,ly])=>g.fillRect(lx-3,ly,6,12));
+      g.lineCap='butt';
+    },
+    frog(){
+      // body
+      g.fillStyle='#28a828';
+      g.beginPath(); g.ellipse(0,6,20,16,0,0,Math.PI*2); g.fill();
+      // head
+      g.beginPath(); g.ellipse(0,-10,18,12,0,0,Math.PI*2); g.fill();
+      // eye bumps
+      g.fillStyle='#38c038';
+      [-11,11].forEach(ex=>{ g.beginPath(); g.arc(ex,-20,8,0,Math.PI*2); g.fill(); });
+      // pupils
+      g.fillStyle='#0a1f0a';
+      [-11,11].forEach(ex=>{ g.beginPath(); g.arc(ex,-20,4,0,Math.PI*2); g.fill(); });
+      g.fillStyle='rgba(255,255,255,.5)';
+      [-11,11].forEach(ex=>{ g.beginPath(); g.arc(ex-1,-21,1.5,0,Math.PI*2); g.fill(); });
+      // mouth smile
+      g.strokeStyle='#1a6a1a'; g.lineWidth=2;
+      g.beginPath(); g.arc(0,-8,10,.15,Math.PI-.15); g.stroke();
+      // belly
+      g.fillStyle='#80e880'; g.beginPath(); g.ellipse(0,8,12,10,0,0,Math.PI*2); g.fill();
+      // back legs
+      g.fillStyle='#209020';
+      g.beginPath(); g.moveTo(-18,14); g.lineTo(-30,26); g.lineTo(-26,30); g.lineTo(-14,20); g.closePath(); g.fill();
+      g.beginPath(); g.moveTo(18,14); g.lineTo(30,26); g.lineTo(26,30); g.lineTo(14,20); g.closePath(); g.fill();
+      // front arms
+      g.beginPath(); g.moveTo(-18,0); g.lineTo(-28,8); g.lineTo(-24,12); g.lineTo(-14,6); g.closePath(); g.fill();
+      g.beginPath(); g.moveTo(18,0); g.lineTo(28,8); g.lineTo(24,12); g.lineTo(14,6); g.closePath(); g.fill();
+    },
+    horse(){
+      // body
+      g.fillStyle='#603818';
+      g.beginPath(); g.ellipse(4,4,20,12,0,0,Math.PI*2); g.fill();
+      // neck
+      g.beginPath(); g.ellipse(-12,-6,8,14,-.5,0,Math.PI*2); g.fill();
+      // head
+      g.beginPath(); g.ellipse(-20,-18,10,8,-.3,0,Math.PI*2); g.fill();
+      // mane
+      g.fillStyle='#301808';
+      for(let i=0;i<6;i++){
+        g.beginPath(); g.ellipse(-10+i*1.5,-4-i*3.5,3,6,-.3,0,Math.PI*2); g.fill();
+      }
+      // legs
+      g.fillStyle='#502a10';
+      [[-10,14],[-2,14],[8,14],[16,14]].forEach(([lx,ly])=>g.fillRect(lx-3,ly,6,16));
+      // hooves
+      g.fillStyle='#1a1a1a';
+      [[-10,28],[-2,28],[8,28],[16,28]].forEach(([lx,ly])=>g.fillRect(lx-3,ly,6,4));
+      // eye
+      g.fillStyle='#111'; g.beginPath(); g.arc(-22,-20,3,0,Math.PI*2); g.fill();
+      g.fillStyle='rgba(255,255,255,.5)'; g.beginPath(); g.arc(-23,-21,1.2,0,Math.PI*2); g.fill();
+      // nostril
+      g.fillStyle='#2a1008'; g.beginPath(); g.arc(-27,-15,2.5,0,Math.PI*2); g.fill();
+      // tail
+      g.strokeStyle='#301808'; g.lineWidth=4; g.lineCap='round';
+      g.beginPath(); g.moveTo(24,0); g.quadraticCurveTo(32,10,28,24); g.stroke();
+      g.lineCap='butt';
+    },
+    ship(){
+      // water
+      g.fillStyle='rgba(60,120,200,.3)';
+      g.fillRect(-30,18,60,14);
+      // hull
+      g.fillStyle='#4070b0';
+      g.beginPath(); g.moveTo(-24,6); g.lineTo(24,6); g.lineTo(20,20); g.lineTo(-20,20); g.closePath(); g.fill();
+      // hull stripe
+      g.fillStyle='#2050a0';
+      g.fillRect(-22,14,44,4);
+      // deck
+      g.fillStyle='#5080c0'; g.fillRect(-22,0,44,8);
+      // superstructure
+      g.fillStyle='#e8e0c8'; g.beginPath(); g.roundRect(-6,-16,22,18,2); g.fill();
+      g.fillStyle='#d8d0b8'; g.beginPath(); g.roundRect(4,-24,10,10,2); g.fill();
+      // funnel
+      g.fillStyle='#c82020'; g.fillRect(6,-28,6,8);
+      g.fillStyle='#a01010'; g.fillRect(5,-30,8,4);
+      // smoke puffs
+      g.fillStyle='rgba(200,200,200,.45)';
+      [8,10,7].forEach((r,i)=>{ g.beginPath(); g.arc(9,-32-i*6,r,0,Math.PI*2); g.fill(); });
+      // windows
+      g.fillStyle='#a0d8f8';
+      [-2,6].forEach(wx=>{ g.fillRect(wx,-13,5,5); });
+      // porthole
+      g.strokeStyle='#6090c0'; g.lineWidth=1.5;
+      [-14,-8,-2].forEach(px=>{ g.beginPath(); g.arc(px,4,3,0,Math.PI*2); g.stroke(); });
+    },
+    truck(){
+      // trailer
+      g.fillStyle='#b06028'; g.beginPath(); g.roundRect(-28,-12,20,24,2); g.fill();
+      // trailer ribs
+      g.strokeStyle='#904818'; g.lineWidth=1.2;
+      [-20,-14,-8].forEach(lx=>{ g.beginPath(); g.moveTo(lx,-10); g.lineTo(lx,10); g.stroke(); });
+      // cab
+      g.fillStyle='#d07030'; g.beginPath(); g.roundRect(-8,-16,22,28,4); g.fill();
+      // windshield
+      g.fillStyle='#88c8f0'; g.beginPath(); g.roundRect(-6,-14,18,12,3); g.fill();
+      // windshield tint
+      g.fillStyle='rgba(0,80,150,.2)'; g.beginPath(); g.roundRect(-6,-14,18,12,3); g.fill();
+      // cabin top light bar
+      g.fillStyle='#ff4444'; g.fillRect(-2,-18,14,3);
+      // door line
+      g.strokeStyle='#b06020'; g.lineWidth=1.2;
+      g.beginPath(); g.moveTo(-8,-12); g.lineTo(-8,10); g.stroke();
+      // headlight
+      g.fillStyle='#ffee80'; g.fillRect(12,-8,5,5);
+      // wheels
+      [[-20,14],[-8,14],[6,14]].forEach(([wx,wy])=>{
+        g.fillStyle='#1a1a1a'; g.beginPath(); g.arc(wx,wy,7,0,Math.PI*2); g.fill();
+        g.fillStyle='#555'; g.beginPath(); g.arc(wx,wy,3.5,0,Math.PI*2); g.fill();
+        g.fillStyle='#888'; g.beginPath(); g.arc(wx,wy,1.5,0,Math.PI*2); g.fill();
+      });
+      // exhaust pipe
+      g.strokeStyle='#808080'; g.lineWidth=2.5; g.lineCap='round';
+      g.beginPath(); g.moveTo(-6,-16); g.lineTo(-6,-24); g.stroke();
+      g.fillStyle='rgba(180,180,180,.4)';
+      g.beginPath(); g.arc(-6,-28,3,0,Math.PI*2); g.fill();
+      g.beginPath(); g.arc(-8,-34,2,0,Math.PI*2); g.fill();
+      g.lineCap='butt';
+    },
+  }[cls]||function(){})();
+
+  g.restore();
+  IMG_CACHE[cls]=c;
+  return c;
 }
 
-// ── Vision Pipeline (JS port) ─────────────────────────────────────
-class VisionPipeline {
-  constructor(classifier='color', noiseLevel=0) {
-    this.classifier = classifier;
-    this.noiseLevel = noiseLevel;
-    this.latencies = [];
-    this.totalProcessed = 0;
-  }
-
-  effectiveAccuracy() {
-    return Math.max(0.25, CLASSIFIER_ACCURACY[this.classifier] - NOISE_PENALTY[this.noiseLevel]);
-  }
-
-  avgLatency() {
-    if (!this.latencies.length) return 0;
-    return (this.latencies.reduce((a,b)=>a+b,0)/this.latencies.length).toFixed(1);
-  }
-
-  process(trueLabel) {
-    const t0 = performance.now();
-    const stageLog = [];
-
-    // Stage 2: Preprocessing log
-    stageLog.push(`Resize → 64×64`);
-    if (this.noiseLevel > 0) stageLog.push(`Gaussian noise σ=${this.noiseLevel*12}`);
-    if (this.noiseLevel >= 2) stageLog.push(`Bilateral denoise`);
-    stageLog.push(`CLAHE normalisation (LAB L-channel)`);
-
-    // Stage 3: Feature extraction log
-    stageLog.push(`HSV colour histogram (32 bins)`);
-    stageLog.push(`HOG descriptor extracted`);
-
-    // Stage 4: Classify
-    let pred, conf, clsLog;
-    if (this.classifier === 'color') {
-      [pred, conf, clsLog] = this._classifyColor(trueLabel);
-    } else if (this.classifier === 'hog') {
-      [pred, conf, clsLog] = this._classifyHog(trueLabel);
+// ═══════════════════════════════════════════════
+// VISION PIPELINE
+// ═══════════════════════════════════════════════
+class Pipeline{
+  constructor(clf,noise){this.clf=clf;this.noise=noise;this.lats=[];this.n=0;}
+  effAcc(){return Math.max(.25,CLF_ACC[this.clf]-NOISE_PEN[this.noise]);}
+  avgLat(){return this.lats.length?(this.lats.reduce((a,b)=>a+b)/this.lats.length).toFixed(1):'0';}
+  process(cls){
+    const t0=performance.now();
+    const log=['Resize → 64×64'];
+    if(this.noise>0) log.push(`Gaussian noise σ=${this.noise*12}`);
+    if(this.noise>=2) log.push('Bilateral denoise');
+    log.push('CLAHE normalisation (LAB L-channel)','HSV colour histogram (32 bins)','HOG descriptor extracted');
+    let pred,conf,cl;
+    if(this.clf==='color'){
+      const map={airplane:.68,automobile:.65,ship:.64,truck:.66,frog:.62,horse:.60,bird:.58,cat:.55,dog:.52,deer:.54};
+      conf=map[cls]||.5; pred=cls;
+      cl=[`Color heuristic → ${pred}`,`Confidence: ${(conf*100).toFixed(0)}%`];
+    } else if(this.clf==='hog'){
+      const map={airplane:.77,automobile:.80,ship:.82,truck:.79,frog:.78,horse:.76,bird:.74,cat:.72,dog:.71,deer:.73};
+      conf=map[cls]||.72; pred=cls;
+      cl=[`HOG peak → ${pred}`,`Confidence: ${(conf*100).toFixed(0)}%`];
     } else {
-      [pred, conf, clsLog] = this._classifyML(trueLabel);
+      conf=.80+Math.random()*.14; pred=cls;
+      cl=[`MobileNetV2 → ${pred}`,`Top confidence: ${(conf*100).toFixed(0)}%`];
     }
-    stageLog.push(...clsLog);
-
-    // Inject error
-    const acc = this.effectiveAccuracy();
-    if (Math.random() > acc) {
-      const wrong = CIFAR_CLASSES.filter(c => c !== trueLabel);
-      pred = wrong[Math.floor(Math.random()*wrong.length)];
-      conf = 0.35 + Math.random()*0.25;
-      stageLog.push(`[noise] override → ${pred}`);
+    log.push(...cl);
+    const acc=this.effAcc();
+    if(Math.random()>acc){
+      const w=CLASSES.filter(c=>c!==cls);
+      pred=w[Math.floor(Math.random()*w.length)];
+      conf=.35+Math.random()*.25;
+      log.push(`[noise] override → ${pred}`);
     }
-
-    const [lo,hi] = LATENCY_MS[this.classifier];
-    const latency = (performance.now()-t0) + lo + Math.random()*(hi-lo);
-    this.latencies.push(latency);
-    this.totalProcessed++;
-
-    return {
-      prediction: pred,
-      predictedBin: getBin(pred),
-      correctBin: getBin(trueLabel),
-      isCorrect: getBin(pred) === getBin(trueLabel),
-      confidence: conf,
-      latencyMs: latency.toFixed(1),
-      stageLog,
-    };
-  }
-
-  _classifyColor(trueLabel) {
-    // Simulate colour-based heuristic
-    const col = CLASS_COLOURS[trueLabel] || [128,128,128];
-    const [r,g,b] = col;
-    let pred, conf;
-    if (b>r && b>g && b>100)       { pred='airplane';   conf=0.68; }
-    else if (r>160 && g<100)       { pred='automobile';  conf=0.65; }
-    else if (g>r && g>b && g>100)  { pred='frog';       conf=0.62; }
-    else if (r>150 && g>120)       { pred='horse';      conf=0.60; }
-    else if (r>140 && g>100)       { pred='cat';        conf=0.58; }
-    else if (b>120 && g>100)       { pred='ship';       conf=0.64; }
-    else                            { pred='dog';        conf=0.50; }
-    return [pred, conf, [`Color: dominant (${r},${g},${b}) → ${pred}`, `Confidence: ${(conf*100).toFixed(0)}%`]];
-  }
-
-  _classifyHog(trueLabel) {
-    const col = CLASS_COLOURS[trueLabel] || [128,128,128];
-    // fake hue peak from dominant colour
-    const [r,,b] = col;
-    const peak = Math.floor((r > b ? r : b) / 20) % 16;
-    let pred, conf;
-    if (peak<=2)       { pred='automobile'; conf=0.78; }
-    else if (peak<=5)  { pred='horse';      conf=0.74; }
-    else if (peak<=9)  { pred='frog';       conf=0.76; }
-    else if (peak<=12) { pred='ship';       conf=0.80; }
-    else               { pred='airplane';   conf=0.77; }
-    return [pred, conf, [`HOG hue peak: ${peak} → ${pred}`, `Confidence: ${(conf*100).toFixed(0)}%`]];
-  }
-
-  _classifyML(trueLabel) {
-    // Simulated MobileNetV2 — higher base accuracy handled by effectiveAccuracy
-    const conf = 0.80 + Math.random()*0.14;
-    return [trueLabel, conf, [`MobileNetV2 softmax → ${trueLabel}`, `Top confidence: ${(conf*100).toFixed(0)}%`]];
+    const [lo,hi]=LAT_MS[this.clf];
+    const lat=(performance.now()-t0)+lo+Math.random()*(hi-lo);
+    this.lats.push(lat); this.n++;
+    return{prediction:pred,predictedBin:getBin(pred),correctBin:getBin(cls),
+           isCorrect:getBin(pred)===getBin(cls),confidence:conf,latencyMs:lat.toFixed(1),stageLog:log};
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 // GAME ENGINE
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════
+function rr(g,x,y,w,h,r){
+  g.beginPath();g.moveTo(x+r,y);g.lineTo(x+w-r,y);g.quadraticCurveTo(x+w,y,x+w,y+r);
+  g.lineTo(x+w,y+h-r);g.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  g.lineTo(x+r,y+h);g.quadraticCurveTo(x,y+h,x,y+h-r);
+  g.lineTo(x,y+r);g.quadraticCurveTo(x,y,x+r,y);g.closePath();
+}
 
-class SortBotGame {
-  constructor(canvas, opts) {
-    this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
-    this.opts = opts; // { classifier, beltSpeed, noiseLevel, batchSize }
+class Game{
+  constructor(cv,opts){
+    this.cv=cv; this.g=cv.getContext('2d'); this.opts=opts;
+    this.pipe=new Pipeline(opts.classifier,opts.noiseLevel);
+    this.spd=opts.beltSpeed;
+    this._resize();
 
-    this.W = 0; this.H = 0;
-    this.resize();
+    // Pre-render all 10 class images at start
+    CLASSES.forEach(c=>makeImg(c));
 
-    this.pipeline = new VisionPipeline(opts.classifier, opts.noiseLevel);
+    this.batch=Array.from({length:opts.batchSize},()=>{
+      const cls=CLASSES[Math.floor(Math.random()*CLASSES.length)];
+      return{cls,img:makeImg(cls)};
+    });
 
-    // Generate batch
-    this.batch = [];
-    for (let i=0; i<opts.batchSize; i++) {
-      const cls = CIFAR_CLASSES[Math.floor(Math.random()*CIFAR_CLASSES.length)];
-      this.batch.push({ cls, img: makeSyntheticImage(cls, 32) });
-    }
+    this.items=[];this.iIdx=0;this.spT=0;
+    this.score=0;this.streak=0;this.best=0;
+    this.total=0;this.correct=0;
+    this.pc=Object.fromEntries(CLASSES.map(c=>[c,[0,0]]));
+    this.paused=false;this.done=false;
+    this.bOff=0;this.pLog=['Initialising…'];this.fb=[];
+    this.aAng=0;this.aTgt=0;
+    this.lastT=null;this.raf=null;
 
-    this.items = [];
-    this.imgIndex = 0;
-    this.spawnTimer = 0;
-
-    this.score = 0;
-    this.streak = 0;
-    this.bestStreak = 0;
-    this.total = 0;
-    this.correct = 0;
-    this.perClass = {};
-    CIFAR_CLASSES.forEach(c => this.perClass[c] = [0,0]);
-
-    this.paused = false;
-    this.done = false;
-    this.beltOffset = 0;
-    this.pipelineLog = ['Initialising…'];
-    this.feedback = []; // { text, x, y, color, alpha, dy }
-    this.armAngle = 0;
-    this.armTarget = 0;
-
-    this.beltSpeed = opts.beltSpeed;
-
-    this.lastTime = null;
-    this.raf = null;
-
-    window.addEventListener('keydown', this._onKey.bind(this));
-    window.addEventListener('resize', () => this.resize());
+    this._kb=e=>this._key(e);
+    window.addEventListener('keydown',this._kb);
+    window.addEventListener('resize',()=>this._resize());
   }
 
-  resize() {
-    this.W = this.canvas.offsetWidth;
-    this.H = this.canvas.offsetHeight;
-    this.canvas.width = this.W;
-    this.canvas.height = this.H;
+  _resize(){
+    this.cv.width=this.cv.offsetWidth;
+    this.cv.height=this.cv.offsetHeight;
+    this.W=this.cv.width; this.H=this.cv.height;
 
-    // Layout constants, scale to canvas
-    const s = Math.min(this.W / 760, this.H / 620);
-    this.scale = s;
-    this.BELT_Y  = Math.round(280 * s);
-    this.BELT_H  = Math.round(90 * s);
-    this.SCAN_X  = Math.round(420 * s);
-    this.BIN_Y   = Math.round(460 * s);
-    this.BIN_W   = Math.round(110 * s);
-    this.BIN_H   = Math.round(80 * s);
-    this.ITEM_SZ = Math.round(56 * s);
+    // Scale entire 800×580 logical space to fit screen
+    // Layout zones (logical coords, scaled):
+    // 0–50:   header
+    // 50–310: belt area (belt centre at 200)
+    // 310–420: bins
+    // 420–580: log + stats panels
+    const s=Math.min(this.W/800,this.H/580);
+    this.s=s;
+    this.BY=Math.round(185*s);   // belt centre Y
+    this.BH=Math.round(80*s);    // belt height
+    this.SX=Math.round(470*s);   // scan X
+    this.IS=Math.round(60*s);    // item size (px)
+    this.BINY=Math.round(365*s); // bin centre Y
+    this.BINW=Math.round(105*s); // bin width
+    this.BINH=Math.round(72*s);  // bin height
+    this.PY=Math.round(455*s);   // panels Y
+    this.PH=Math.round(108*s);   // panels height
+    this.LW=Math.round(370*s);   // log panel width
+    this.SX2=Math.round(395*s);  // stats panel X
   }
 
-  start() {
-    this.lastTime = performance.now();
-    this.raf = requestAnimationFrame(this._loop.bind(this));
+  start(){this.lastT=performance.now();this.raf=requestAnimationFrame(t=>this._loop(t));}
+  stop(){if(this.raf)cancelAnimationFrame(this.raf);window.removeEventListener('keydown',this._kb);}
+
+  _key(e){
+    if(e.code==='Space'){e.preventDefault();this.paused=!this.paused;document.getElementById('pause-overlay').classList.toggle('active',this.paused);}
+    if(e.key==='q'||e.key==='Q'||e.key==='Escape')this._end();
+    if('12345'.includes(e.key))this.spd=+e.key;
   }
 
-  stop() {
-    if (this.raf) cancelAnimationFrame(this.raf);
-    window.removeEventListener('keydown', this._onKey.bind(this));
-  }
-
-  _onKey(e) {
-    if (e.code === 'Space') { e.preventDefault(); this.paused = !this.paused; document.getElementById('pause-overlay').classList.toggle('active', this.paused); }
-    if (e.key === 'q' || e.key === 'Q' || e.key === 'Escape') this._endGame();
-    if ('12345'.includes(e.key)) this.beltSpeed = parseInt(e.key);
-  }
-
-  _loop(now) {
-    const dt = Math.min((now - this.lastTime)/1000, 0.1);
-    this.lastTime = now;
-
-    if (!this.paused && !this.done) {
-      this._update(dt);
-    }
+  _loop(now){
+    const dt=Math.min((now-this.lastT)/1000,.1);this.lastT=now;
+    if(!this.paused&&!this.done)this._update(dt);
     this._draw();
-
-    if (!this.done) this.raf = requestAnimationFrame(this._loop.bind(this));
+    if(!this.done)this.raf=requestAnimationFrame(t=>this._loop(t));
   }
 
-  _update(dt) {
-    const speedPx = this.beltSpeed * 80 * dt * this.scale;
-    this.beltOffset = (this.beltOffset + speedPx) % 40;
+  _update(dt){
+    const mv=this.spd*68*dt*this.s;
+    this.bOff=(this.bOff+mv)%38;
 
-    // Spawn
-    if (this.imgIndex < this.batch.length) {
-      this.spawnTimer += dt;
-      const gap = Math.max(0.7, 2.2 - this.beltSpeed * 0.2);
-      if (this.spawnTimer >= gap) {
-        this._spawnItem();
-        this.spawnTimer = 0;
+    if(this.iIdx<this.batch.length){
+      this.spT+=dt;
+      const gap=Math.max(.65,1.9-this.spd*.18);
+      if(this.spT>=gap){this._spawn();this.spT=0;}
+    }
+
+    for(const it of this.items){
+      it.x-=mv;it.age+=dt;
+      if(it.ft>0)it.ft-=dt;else if(it.ft<0)it.ft+=dt;
+      if(!it.clf&&it.x<=this.SX){
+        it.clf=true;
+        this.pLog=['Stage 1: frame captured','Stage 2: preprocessing…'];
+        const r=this.pipe.process(it.cls);
+        setTimeout(()=>this._apply(it,r),80+Math.random()*100);
       }
     }
+    this.items=this.items.filter(i=>i.x>-110);
+    this.aAng+=(this.aTgt-this.aAng)*Math.min(1,dt*6);
+    this.fb=this.fb.filter(f=>f.a>0);
+    for(const f of this.fb){f.a-=dt*1.4;f.dy-=dt*26;}
 
-    // Move items
-    for (const item of this.items) {
-      item.x -= speedPx;
-      item.age += dt;
-      if (item.flashTimer > 0) item.flashTimer -= dt;
-      else if (item.flashTimer < 0) item.flashTimer += dt;
-
-      // Classify at scan line
-      if (!item.classified && item.x <= this.SCAN_X) {
-        item.classified = true;
-        this.pipelineLog = ['Stage 1: frame captured', 'Stage 2: preprocessing…'];
-        // Async simulation (micro delay)
-        const result = this.pipeline.process(item.cls);
-        setTimeout(() => this._applyResult(item, result), 50 + Math.random()*100);
-      }
-    }
-
-    this.items = this.items.filter(i => i.x > -120);
-
-    // Animate arm
-    this.armAngle += (this.armTarget - this.armAngle) * Math.min(1, dt * 6);
-
-    // Decay feedback
-    this.feedback = this.feedback.filter(f => f.alpha > 0);
-    for (const f of this.feedback) {
-      f.alpha -= dt * 1.6;
-      f.dy -= dt * 30;
-    }
-
-    // Update HUD
-    const acc = (this.correct / Math.max(this.total,1) * 100).toFixed(1);
-    document.getElementById('hud-left').textContent =
-      `${this.opts.classifier.toUpperCase()} · noise:${this.opts.noiseLevel} · eff.acc:${(this.pipeline.effectiveAccuracy()*100).toFixed(0)}% · avg:${this.pipeline.avgLatency()}ms`;
-
-    // End condition
-    if (this.imgIndex >= this.batch.length && this.items.length === 0) {
-      setTimeout(() => this._endGame(), 1500);
-      this.done = true;
+    if(this.iIdx>=this.batch.length&&this.items.length===0){
+      this.done=true;setTimeout(()=>this._end(),1500);
     }
   }
 
-  _spawnItem() {
-    const { cls, img } = this.batch[this.imgIndex++];
-    const item = {
-      cls, img,
-      x: this.W + this.ITEM_SZ,
-      classified: false,
-      result: null,
-      age: 0,
-      flashTimer: 0,
-    };
-    this.items.push(item);
+  _spawn(){
+    const{cls,img}=this.batch[this.iIdx++];
+    this.items.push({cls,img,x:this.W+this.IS,clf:false,result:null,age:0,ft:0});
   }
 
-  _applyResult(item, result) {
-    item.result = result;
-    this.total++;
-    this.perClass[item.cls][1]++;
-
-    if (result.isCorrect) {
-      this.correct++;
-      this.streak++;
-      this.bestStreak = Math.max(this.bestStreak, this.streak);
-      const pts = 10 + this.streak * 2;
-      this.score += pts;
-      this.perClass[item.cls][0]++;
-      item.flashTimer = 0.4;
-      this.feedback.push({ text:`+${pts}`, x:item.x, y:this.BELT_Y-this.BELT_H/2-20, color:'#1d9e75', alpha:1, dy:0 });
+  _apply(it,res){
+    it.result=res;this.total++;this.pc[it.cls][1]++;
+    if(res.isCorrect){
+      this.correct++;this.streak++;this.best=Math.max(this.best,this.streak);
+      const pts=10+this.streak*2;this.score+=pts;
+      this.pc[it.cls][0]++;it.ft=.45;
+      this.fb.push({text:`+${pts}`,x:it.x,y:this.BY-this.BH/2-16*this.s,color:'#1d9e75',a:1,dy:0});
     } else {
-      this.streak = 0;
-      item.flashTimer = -0.4;
-      this.feedback.push({ text:'ERR', x:item.x, y:this.BELT_Y-this.BELT_H/2-20, color:'#e24b4a', alpha:1, dy:0 });
+      this.streak=0;it.ft=-.45;
+      this.fb.push({text:'ERR',x:it.x,y:this.BY-this.BH/2-16*this.s,color:'#e24b4a',a:1,dy:0});
     }
-
-    const bins = ['recycle','organic','metal','reject'];
-    const bIdx = bins.indexOf(result.predictedBin);
-    const angles = [-45,-15,15,45];
-    this.armTarget = angles[bIdx] ?? 0;
-
-    this.pipelineLog = result.stageLog.slice(-6);
+    const bins=['recycle','organic','metal','reject'];
+    this.aTgt=[-45,-15,15,45][bins.indexOf(res.predictedBin)]??0;
+    this.pLog=res.stageLog.slice(-6);
   }
 
-  // ── Draw ─────────────────────────────────────────────────────────
-  _draw() {
-    const { ctx, W, H } = this;
-    ctx.clearRect(0,0,W,H);
-    ctx.fillStyle = '#12120f';
-    ctx.fillRect(0,0,W,H);
-
-    this._drawHeader();
-    this._drawBelt();
-    this._drawItems();
-    this._drawScanLine();
-    this._drawArm();
-    this._drawBins();
-    this._drawPipelineLog();
-    this._drawStats();
-    this._drawFeedback();
+  _draw(){
+    const{g,W,H}=this;
+    g.clearRect(0,0,W,H);
+    g.fillStyle='#12120f';g.fillRect(0,0,W,H);
+    this._dHeader();this._dBelt();this._dItems();
+    this._dScan();this._dArm();this._dBins();
+    this._dLog();this._dStats();this._dFb();this._dHint();
   }
 
-  _drawHeader() {
-    const { ctx, W, scale } = this;
-    ctx.font = `700 ${18*scale}px Barlow, sans-serif`;
-    ctx.fillStyle = '#f0f0eb';
-    ctx.fillText('SortBot Vision System', 16*scale, 30*scale);
+  _dHeader(){
+    const{g,s}=this;
+    g.font=`700 ${15*s}px Barlow,sans-serif`;g.fillStyle='#f0f0eb';
+    g.fillText('SortBot Vision System',12*s,22*s);
+    g.font=`${10*s}px 'Share Tech Mono',monospace`;g.fillStyle='#5a5a62';
+    g.fillText(`${this.opts.classifier.toUpperCase()} · noise:${this.opts.noiseLevel} · eff.acc:${(this.pipe.effAcc()*100).toFixed(0)}% · avg latency:${this.pipe.avgLat()}ms`,12*s,38*s);
   }
 
-  _drawBelt() {
-    const { ctx, W, BELT_Y, BELT_H, beltOffset, scale } = this;
-    const top = BELT_Y - BELT_H/2;
-    ctx.fillStyle = '#222226';
-    ctx.fillRect(0, top, W, BELT_H);
-
-    ctx.strokeStyle = '#2b2b30';
-    ctx.lineWidth = 1;
-    for (let x = -beltOffset; x < W; x += 40*scale) {
-      ctx.beginPath();
-      ctx.moveTo(x, top);
-      ctx.lineTo(x, top + BELT_H);
-      ctx.stroke();
-    }
-
-    ctx.strokeStyle = '#7a7872';
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(0,top); ctx.lineTo(W,top); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,top+BELT_H); ctx.lineTo(W,top+BELT_H); ctx.stroke();
+  _dBelt(){
+    const{g,W,BY,BH,bOff,s}=this;
+    const top=BY-BH/2;
+    // belt body
+    g.fillStyle='#1e1e26';g.fillRect(0,top,W,BH);
+    // stripes
+    g.strokeStyle='#28283a';g.lineWidth=1;
+    for(let x=-bOff;x<W;x+=38*s){g.beginPath();g.moveTo(x,top);g.lineTo(x,top+BH);g.stroke();}
+    // roller strip top/bottom
+    const rh=7*s;
+    g.fillStyle='#2a2a38';g.fillRect(0,top,W,rh);g.fillRect(0,top+BH-rh,W,rh);
+    // edges
+    g.strokeStyle='#4a4a5a';g.lineWidth=1.5;
+    g.beginPath();g.moveTo(0,top);g.lineTo(W,top);g.stroke();
+    g.beginPath();g.moveTo(0,top+BH);g.lineTo(W,top+BH);g.stroke();
   }
 
-  _drawItems() {
-    const { ctx, BELT_Y, ITEM_SZ } = this;
-    for (const item of this.items) {
-      const x = Math.round(item.x), y = BELT_Y;
-      const hw = ITEM_SZ/2;
-
-      // Flash glow
-      if (item.flashTimer !== 0) {
-        const alpha = Math.min(1, Math.abs(item.flashTimer) * 2.5);
-        ctx.save();
-        ctx.globalAlpha = alpha * 0.5;
-        ctx.fillStyle = item.flashTimer > 0 ? '#1d9e75' : '#e24b4a';
-        ctx.fillRect(x-hw-4, y-hw-4, ITEM_SZ+8, ITEM_SZ+8);
-        ctx.restore();
+  _dItems(){
+    const{g,BY,IS,s}=this;
+    for(const it of this.items){
+      const x=Math.round(it.x),y=BY,hw=IS/2;
+      // glow flash
+      if(it.ft!==0){
+        const a=Math.min(.6,Math.abs(it.ft)*1.8);
+        g.save();g.globalAlpha=a;
+        g.fillStyle=it.ft>0?'#1d9e75':'#e24b4a';
+        g.fillRect(x-hw-5,y-hw-5,IS+10,IS+10);
+        g.restore();
       }
-
-      // Image
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(item.img, x-hw, y-hw, ITEM_SZ, ITEM_SZ);
-
-      // Border
-      ctx.strokeStyle = item.result
-        ? (item.result.isCorrect ? '#1d9e75' : '#e24b4a')
-        : '#32323a';
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(x-hw, y-hw, ITEM_SZ, ITEM_SZ);
-
-      // Label
-      if (item.classified && item.result) {
-        const { scale } = this;
-        ctx.font = `${11*scale}px 'Share Tech Mono', monospace`;
-        ctx.fillStyle = '#f0f0eb';
-        ctx.textAlign = 'center';
-        ctx.fillText(`${item.result.prediction} ${(item.result.confidence*100).toFixed(0)}%`, x, y-hw-6*scale);
-        ctx.textAlign = 'left';
+      // drop shadow
+      g.save();g.globalAlpha=.25;g.fillStyle='#000';g.fillRect(x-hw+3,y+hw,IS,5);g.restore();
+      // draw image
+      g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
+      g.drawImage(it.img,x-hw,y-hw,IS,IS);
+      // border
+      g.strokeStyle=it.result?(it.result.isCorrect?'#1d9e75':'#e24b4a'):'#3a3a4a';
+      g.lineWidth=2;g.strokeRect(x-hw,y-hw,IS,IS);
+      // label pill
+      if(it.clf&&it.result){
+        const lbl=`${it.result.prediction} ${(it.result.confidence*100).toFixed(0)}%`;
+        g.font=`${9.5*s}px 'Share Tech Mono',monospace`;
+        const tw=g.measureText(lbl).width;
+        g.fillStyle='rgba(10,10,14,.8)';
+        rr(g,x-tw/2-4,y-hw-18*s,tw+8,14*s,4);g.fill();
+        g.fillStyle='#e8e8e0';g.textAlign='center';
+        g.fillText(lbl,x,y-hw-7*s);g.textAlign='left';
       }
     }
   }
 
-  _drawScanLine() {
-    const { ctx, SCAN_X, BELT_Y, BELT_H, scale } = this;
-    const pulse = 0.6 + 0.4 * Math.sin(performance.now()/1000 * 4);
-    const g = Math.round(158 * pulse);
-    ctx.strokeStyle = `rgb(29,${g},117)`;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(SCAN_X, BELT_Y - BELT_H/2 - 10*scale);
-    ctx.lineTo(SCAN_X, BELT_Y + BELT_H/2 + 10*scale);
-    ctx.stroke();
-
-    ctx.font = `${10*scale}px 'Share Tech Mono', monospace`;
-    ctx.fillStyle = ctx.strokeStyle;
-    ctx.textAlign = 'center';
-    ctx.fillText('SCAN', SCAN_X, BELT_Y - BELT_H/2 - 14*scale);
-    ctx.textAlign = 'left';
+  _dScan(){
+    const{g,SX,BY,BH,s}=this;
+    const pulse=.5+.5*Math.sin(performance.now()/240);
+    const col=`rgba(29,${Math.round(100+80*pulse)},100,${.6+.4*pulse})`;
+    g.strokeStyle=col;g.lineWidth=2;g.setLineDash([5*s,3*s]);
+    g.beginPath();g.moveTo(SX,BY-BH/2-14*s);g.lineTo(SX,BY+BH/2+14*s);g.stroke();
+    g.setLineDash([]);
+    g.font=`bold ${9*s}px 'Share Tech Mono',monospace`;
+    g.fillStyle=col;g.textAlign='center';
+    g.fillText('◆ SCAN',SX,BY-BH/2-18*s);g.textAlign='left';
   }
 
-  _drawArm() {
-    const { ctx, SCAN_X, BELT_Y, BELT_H, scale } = this;
-    const px = SCAN_X + 60*scale;
-    const py = BELT_Y + BELT_H/2 + 10*scale;
-    const len = 55*scale;
-    const rad = this.armAngle * Math.PI / 180;
-    const ex = px + len * Math.sin(rad);
-    const ey = py + len * Math.cos(rad);
-    ctx.strokeStyle = '#ef9f27';
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(ex,ey); ctx.stroke();
-    ctx.fillStyle = '#ef9f27';
-    ctx.beginPath(); ctx.arc(px,py,5*scale,0,Math.PI*2); ctx.fill();
+  _dArm(){
+    const{g,SX,BY,BH,s}=this;
+    const px=SX+52*s,py=BY+BH/2+6*s,len=48*s;
+    const rad=this.aAng*Math.PI/180;
+    const ex=px+len*Math.sin(rad),ey=py+len*Math.cos(rad);
+    g.save();g.globalAlpha=.2;g.strokeStyle='#000';g.lineWidth=6*s;
+    g.beginPath();g.moveTo(px+2,py+2);g.lineTo(ex+2,ey+2);g.stroke();g.restore();
+    g.strokeStyle='#ef9f27';g.lineWidth=3.5*s;g.lineCap='round';
+    g.beginPath();g.moveTo(px,py);g.lineTo(ex,ey);g.stroke();
+    g.fillStyle='#ef9f27';g.beginPath();g.arc(px,py,5*s,0,Math.PI*2);g.fill();
+    g.fillStyle='#ffd070';g.beginPath();g.arc(ex,ey,3*s,0,Math.PI*2);g.fill();
+    g.lineCap='butt';
   }
 
-  _drawBins() {
-    const { ctx, W, BIN_Y, BIN_W, BIN_H, scale } = this;
-    const bins = ['recycle','organic','metal','reject'];
-    const labels = { recycle:'Recycle', organic:'Organic', metal:'Metal', reject:'Reject' };
-    const spacing = W / bins.length;
-
-    for (let i=0; i<bins.length; i++) {
-      const b = bins[i];
-      const cx = spacing/2 + i*spacing;
-      const cy = BIN_Y;
-      const col = BIN_COLORS[b];
-      const dim = BIN_DIM[b];
-
-      ctx.fillStyle = dim;
-      roundRect(ctx, cx-BIN_W/2, cy-BIN_H/2, BIN_W, BIN_H, 8*scale);
-      ctx.fill();
-      ctx.strokeStyle = col;
-      ctx.lineWidth = 2;
-      roundRect(ctx, cx-BIN_W/2, cy-BIN_H/2, BIN_W, BIN_H, 8*scale);
-      ctx.stroke();
-
-      ctx.fillStyle = col;
-      ctx.font = `600 ${13*scale}px Barlow, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.fillText(labels[b], cx, cy - 8*scale);
-
-      // Count correct to this bin
-      const cnt = CIFAR_CLASSES.filter(c=>getBin(c)===b)
-        .reduce((s,c)=>s+this.perClass[c][0], 0);
-      ctx.fillStyle = '#f0f0eb';
-      ctx.font = `700 ${20*scale}px 'Share Tech Mono', monospace`;
-      ctx.fillText(cnt, cx, cy + 16*scale);
-      ctx.textAlign = 'left';
+  _dBins(){
+    const{g,W,BINY,BINW,BINH,s}=this;
+    const bins=['recycle','organic','metal','reject'];
+    const sp=W/4;
+    for(let i=0;i<4;i++){
+      const b=bins[i],cx=sp/2+i*sp,cy=BINY;
+      const col=BIN_COL[b],dim=BIN_DIM[b];
+      // shadow
+      g.save();g.globalAlpha=.2;g.fillStyle='#000';
+      rr(g,cx-BINW/2+4,cy-BINH/2+4,BINW,BINH,8*s);g.fill();g.restore();
+      // fill
+      g.fillStyle=dim;rr(g,cx-BINW/2,cy-BINH/2,BINW,BINH,8*s);g.fill();
+      // glow border
+      g.strokeStyle=col;g.lineWidth=2;rr(g,cx-BINW/2,cy-BINH/2,BINW,BINH,8*s);g.stroke();
+      // label
+      g.font=`600 ${10.5*s}px Barlow,sans-serif`;g.fillStyle=col;g.textAlign='center';
+      g.fillText(BIN_LBL[b],cx,cy-8*s);
+      // count
+      const cnt=CLASSES.filter(c=>getBin(c)===b).reduce((a,c)=>a+this.pc[c][0],0);
+      g.font=`700 ${20*s}px 'Share Tech Mono',monospace`;g.fillStyle='#f0f0eb';
+      g.fillText(cnt,cx,cy+14*s);g.textAlign='left';
     }
   }
 
-  _drawPipelineLog() {
-    const { ctx, scale } = this;
-    const px=16*scale, py=340*scale, pw=340*scale, ph=110*scale;
-    ctx.fillStyle = '#1c1c20';
-    roundRect(ctx,px,py,pw,ph,6*scale); ctx.fill();
-    ctx.strokeStyle = '#323238'; ctx.lineWidth=1;
-    roundRect(ctx,px,py,pw,ph,6*scale); ctx.stroke();
-
-    ctx.font = `${10*scale}px Barlow, sans-serif`;
-    ctx.fillStyle = '#7a7872';
-    ctx.fillText('Vision pipeline log', px+12*scale, py+16*scale);
-
-    const lines = this.pipelineLog.slice(-5);
-    for (let i=0; i<lines.length; i++) {
-      ctx.font = `${11*scale}px 'Share Tech Mono', monospace`;
-      ctx.fillStyle = i===lines.length-1 ? '#1d9e75' : '#7a7872';
-      ctx.fillText(lines[i].slice(0,46), px+12*scale, py+32*scale + i*18*scale);
+  _dLog(){
+    const{g,s,PY,PH,LW}=this;
+    const px=10*s;
+    g.fillStyle='#141418';rr(g,px,PY,LW,PH,6*s);g.fill();
+    g.strokeStyle='#28283a';g.lineWidth=1;rr(g,px,PY,LW,PH,6*s);g.stroke();
+    g.font=`600 ${8.5*s}px Barlow,sans-serif`;g.fillStyle='#44445a';
+    g.fillText('VISION PIPELINE LOG',px+10*s,PY+14*s);
+    const lines=this.pLog.slice(-5);
+    for(let i=0;i<lines.length;i++){
+      g.font=`${10*s}px 'Share Tech Mono',monospace`;
+      g.fillStyle=i===lines.length-1?'#1d9e75':'#585870';
+      g.fillText(lines[i].slice(0,42),px+10*s,PY+28*s+i*16*s);
     }
   }
 
-  _drawStats() {
-    const { ctx, scale } = this;
-    const px=370*scale, py=340*scale, pw=360*scale, ph=110*scale;
-    ctx.fillStyle = '#1c1c20';
-    roundRect(ctx,px,py,pw,ph,6*scale); ctx.fill();
-    ctx.strokeStyle = '#323238'; ctx.lineWidth=1;
-    roundRect(ctx,px,py,pw,ph,6*scale); ctx.stroke();
-
-    const acc = (this.correct/Math.max(this.total,1)*100).toFixed(1);
-    const accCol = parseFloat(acc)>75 ? '#1d9e75' : parseFloat(acc)>55 ? '#ef9f27' : '#e24b4a';
-    const stats = [
-      ['Score',    this.score,                    '#f0f0eb'],
-      ['Accuracy', acc+'%',                       accCol],
-      ['Streak',   this.streak,                   '#ef9f27'],
-      ['Sorted',   `${this.total}/${this.batch.length}`, '#7a7872'],
-    ];
-
-    for (let i=0; i<stats.length; i++) {
-      const [lbl,val,col] = stats[i];
-      const x = px + (i%2)*175*scale + 12*scale;
-      const y = py + Math.floor(i/2)*50*scale + 18*scale;
-      ctx.font = `${10*scale}px Barlow, sans-serif`;
-      ctx.fillStyle = '#7a7872';
-      ctx.fillText(lbl, x, y);
-      ctx.font = `700 ${20*scale}px Barlow, sans-serif`;
-      ctx.fillStyle = col;
-      ctx.fillText(val, x, y+20*scale);
+  _dStats(){
+    const{g,s,PY,PH,SX2,W}=this;
+    const px=SX2,pw=W-SX2-10*s;
+    g.fillStyle='#141418';rr(g,px,PY,pw,PH,6*s);g.fill();
+    g.strokeStyle='#28283a';g.lineWidth=1;rr(g,px,PY,pw,PH,6*s);g.stroke();
+    const acc=this.correct/Math.max(this.total,1)*100;
+    const ac=acc>75?'#1d9e75':acc>55?'#ef9f27':'#e24b4a';
+    const stats=[['Score',this.score,'#f0f0eb'],['Accuracy',acc.toFixed(1)+'%',ac],
+                 ['Streak',this.streak,'#ef9f27'],['Sorted',`${this.total}/${this.batch.length}`,'#6a6a7a']];
+    const hw=pw/2;
+    for(let i=0;i<4;i++){
+      const[lbl,val,col]=stats[i];
+      const ox=px+(i%2)*hw+10*s,oy=PY+Math.floor(i/2)*(PH/2)+13*s;
+      g.font=`${8.5*s}px Barlow,sans-serif`;g.fillStyle='#44445a';g.fillText(lbl,ox,oy);
+      g.font=`700 ${17*s}px Barlow,sans-serif`;g.fillStyle=col;g.fillText(val,ox,oy+17*s);
     }
   }
 
-  _drawFeedback() {
-    const { ctx, scale } = this;
-    for (const f of this.feedback) {
-      if (f.alpha <= 0) continue;
-      ctx.save();
-      ctx.globalAlpha = f.alpha;
-      ctx.font = `700 ${18*scale}px Barlow, sans-serif`;
-      ctx.fillStyle = f.color;
-      ctx.textAlign = 'center';
-      ctx.fillText(f.text, f.x, f.y + f.dy);
-      ctx.restore();
+  _dFb(){
+    const{g,s}=this;
+    for(const f of this.fb){
+      if(f.a<=0)continue;
+      g.save();g.globalAlpha=f.a;
+      g.font=`700 ${15*s}px Barlow,sans-serif`;g.fillStyle=f.color;g.textAlign='center';
+      g.fillText(f.text,f.x,f.y+f.dy);g.restore();
     }
-    this.ctx.textAlign = 'left';
+    g.textAlign='left';
   }
 
-  _endGame() {
+  _dHint(){
+    const{g,W,H,s}=this;
+    g.font=`${8.5*s}px 'Share Tech Mono',monospace`;g.fillStyle='#30303a';
+    g.textAlign='right';
+    g.fillText('SPACE pause · 1-5 speed · Q quit',W-10*s,H-7*s);
+    g.textAlign='left';
+  }
+
+  _end(){
     this.stop();
-    // Populate end screen
-    document.getElementById('end-score').textContent = this.score;
-    document.getElementById('es-sorted').textContent = this.total;
-    document.getElementById('es-acc').textContent = (this.correct/Math.max(this.total,1)*100).toFixed(1)+'%';
-    document.getElementById('es-streak').textContent = this.bestStreak;
-    document.getElementById('es-lat').textContent = this.pipeline.avgLatency()+'ms';
-
-    const grid = document.getElementById('per-class-grid');
-    grid.innerHTML = '';
-    for (const cls of CIFAR_CLASSES) {
-      const [c,t] = this.perClass[cls];
-      if (t===0) continue;
-      const pct = Math.round(c/t*100);
-      const row = document.createElement('div');
-      row.className = 'cls-row';
-      row.innerHTML = `<span class="cls-name">${cls}</span>
-        <div class="cls-bar-bg"><div class="cls-bar" style="width:${pct}%;background:${pct>75?'#1d9e75':pct>50?'#ef9f27':'#e24b4a'}"></div></div>
-        <span class="cls-pct">${pct}%</span>`;
+    document.getElementById('end-score').textContent=this.score;
+    document.getElementById('es-sorted').textContent=this.total;
+    document.getElementById('es-acc').textContent=(this.correct/Math.max(this.total,1)*100).toFixed(1)+'%';
+    document.getElementById('es-streak').textContent=this.best;
+    document.getElementById('es-lat').textContent=this.pipe.avgLat()+'ms';
+    const grid=document.getElementById('per-class-grid');grid.innerHTML='';
+    for(const cls of CLASSES){
+      const[c,t]=this.pc[cls];if(!t)continue;
+      const pct=Math.round(c/t*100),bc=pct>75?'#1d9e75':pct>50?'#ef9f27':'#e24b4a';
+      const row=document.createElement('div');row.className='cls-row';
+      row.innerHTML=`<span class="cls-name">${cls}</span><div class="cls-bar-bg"><div class="cls-bar" style="width:${pct}%;background:${bc}"></div></div><span class="cls-pct">${pct}%</span>`;
       grid.appendChild(row);
     }
-
     document.getElementById('game-wrap').classList.remove('active');
     document.getElementById('end-screen').classList.add('active');
   }
 }
 
-// ── Util: rounded rect ───────────────────────────────────────────
-function roundRect(ctx,x,y,w,h,r) {
-  ctx.beginPath();
-  ctx.moveTo(x+r,y);
-  ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
-  ctx.closePath();
-}
-
-// ═══════════════════════════════════════════════════════════════
-// MENU LOGIC
-// ═══════════════════════════════════════════════════════════════
-
-let currentGame = null;
-
-function setupOptGroup(groupId, key, store) {
-  document.getElementById(groupId).addEventListener('click', e => {
-    const btn = e.target.closest('.opt-btn');
-    if (!btn) return;
-    document.querySelectorAll(`#${groupId} .opt-btn`).forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    store[key] = isNaN(+btn.dataset.val) ? btn.dataset.val : +btn.dataset.val;
+// ═══════════════════════════════════════════════
+// MENU
+// ═══════════════════════════════════════════════
+const opts={classifier:'color',beltSpeed:2,noiseLevel:0,batchSize:40};
+let G=null;
+['clf-opts','speed-opts','noise-opts','batch-opts'].forEach((id,i)=>{
+  const key=['classifier','beltSpeed','noiseLevel','batchSize'][i];
+  document.getElementById(id).addEventListener('click',e=>{
+    const b=e.target.closest('.opt-btn');if(!b)return;
+    document.querySelectorAll(`#${id} .opt-btn`).forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    opts[key]=isNaN(+b.dataset.val)?b.dataset.val:+b.dataset.val;
   });
-}
-
-const opts = { classifier:'color', beltSpeed:2, noiseLevel:0, batchSize:40 };
-setupOptGroup('clf-opts',   'classifier', opts);
-setupOptGroup('speed-opts', 'beltSpeed',  opts);
-setupOptGroup('noise-opts', 'noiseLevel', opts);
-setupOptGroup('batch-opts', 'batchSize',  opts);
-
-document.getElementById('start-btn').addEventListener('click', () => {
+});
+document.getElementById('start-btn').addEventListener('click',()=>{
   document.getElementById('menu').classList.add('hidden');
   document.getElementById('game-wrap').classList.add('active');
   document.getElementById('end-screen').classList.remove('active');
   document.getElementById('pause-overlay').classList.remove('active');
-
-  const canvas = document.getElementById('canvas');
-  if (currentGame) currentGame.stop();
-  currentGame = new SortBotGame(canvas, { ...opts });
-  currentGame.start();
+  const cv=document.getElementById('canvas');
+  if(G)G.stop();
+  G=new Game(cv,{...opts});G.start();
 });
-
-document.getElementById('restart-btn').addEventListener('click', () => {
+document.getElementById('restart-btn').addEventListener('click',()=>{
   document.getElementById('end-screen').classList.remove('active');
   document.getElementById('menu').classList.remove('hidden');
 });
