@@ -109,8 +109,9 @@
 // CONSTANTS
 // ═══════════════════════════════════════════════
 const CLASSES=['airplane','automobile','bird','cat','deer','dog','frog','horse','ship','truck'];
-const TO_BIN={airplane:'recycle',automobile:'recycle',bird:'organic',cat:'organic',deer:'organic',dog:'organic',frog:'organic',horse:'organic',ship:'metal',truck:'metal'};
+
 const DEFECT=new Set(['frog','deer']);
+const TO_BIN={airplane:'metal',automobile:'metal',bird:'organic',cat:'organic',deer:'organic',dog:'organic',frog:'organic',horse:'organic',ship:'metal',truck:'metal'};
 const getBin=c=>DEFECT.has(c)?'reject':(TO_BIN[c]||'reject');
 const CLF_ACC={color:.72,hog:.83,ml:.94};
 const NOISE_PEN=[0,.06,.14,.24,.38];
@@ -118,7 +119,6 @@ const LAT_MS={color:[8,18],hog:[22,40],ml:[55,95]};
 const BIN_COL={recycle:'#378add',organic:'#1d9e75',metal:'#7f77dd',reject:'#e24b4a'};
 const BIN_DIM={recycle:'#0a2040',organic:'#082e20',metal:'#1a1840',reject:'#3a1010'};
 const BIN_LBL={recycle:'♻ Recycle',organic:'🌿 Organic',metal:'⚙ Metal',reject:'✕ Reject'};
-const TO_BIN={airplane:'metal',automobile:'metal',bird:'organic',cat:'organic',deer:'organic',dog:'organic',frog:'organic',horse:'organic',ship:'metal',truck:'metal'};
 const REASONING={
   airplane:['long swept wings detected','thin symmetrical fuselage','high-altitude silhouette'],
   automobile:['wheel arch contours','compact rectangular body','low ground clearance'],
@@ -524,11 +524,13 @@ class Game{
     this.bOff=0;this.pLog=['Initialising…'];this.fb=[];
     this.aAng=0;this.aTgt=0;this.scanPause=0;
     this.lastResult=null;this.lastResultImg=null;
+    this._pending=[];
     this.lastT=null;this.raf=null;
 
     this._kb=e=>this._key(e);
     window.addEventListener('keydown',this._kb);
-    window.addEventListener('resize',()=>this._resize());
+    let _resizeTimer;
+    window.addEventListener('resize',()=>{clearTimeout(_resizeTimer);_resizeTimer=setTimeout(()=>this._resize(),120);});
   }
 
   _resize(){
@@ -574,7 +576,7 @@ class Game{
   }
 
   _update(dt){
-    if(this.scanPause>0){this.scanPause-=dt;this._draw();return;}
+    if(this.scanPause>0){this.scanPause-=dt;return;}
     const mv=this.spd*68*dt*this.s;
     this.bOff=(this.bOff+mv)%38;
 
@@ -591,10 +593,17 @@ class Game{
         it.clf=true;this.scanPause=1.1;
         this.pLog=['Stage 1: frame captured','Stage 2: preprocessing…'];
         const r=this.pipe.process(it.cls);
-        setTimeout(()=>this._apply(it,r),80+Math.random()*100);
+        this._pending.push({it,r});
       }
     }
     this.items=this.items.filter(i=>i.x>-110);
+
+    // drain pending results — applied in-loop, no async races
+    while(this._pending.length){
+      const{it,r}=this._pending.shift();
+      this._apply(it,r);
+    }
+
     this.aAng+=(this.aTgt-this.aAng)*Math.min(1,dt*6);
     this.fb=this.fb.filter(f=>f.a>0);
     for(const f of this.fb){f.a-=dt*1.4;f.dy-=dt*26;}
@@ -639,45 +648,49 @@ class Game{
   }
 
   _dAnalysisPanel(){
-    const{g,s,W,H}=this;
+    const{g,s,W}=this;
     const res=this.lastResult; const img=this.lastResultImg;
     if(!res||!img) return;
-    const pw=220*s,ph=190*s,px=W-pw-10*s,py=10*s;
-    // panel bg
-    g.fillStyle='#0e0e12';rr(g,px,py,pw,ph,8*s);g.fill();
-    g.strokeStyle='#2a2a40';g.lineWidth=1;rr(g,px,py,pw,ph,8*s);g.stroke();
-    // header
-    g.font=`700 ${9*s}px 'Share Tech Mono',monospace`;g.fillStyle='#1d9e75';
-    g.fillText('AI ANALYSIS',px+10*s,py+16*s);
-    // thumbnail
-    const ts=62*s;
-    g.drawImage(img,px+10*s,py+24*s,ts,ts);
-    // fake edge overlay on thumbnail
-    g.save();g.globalAlpha=0.18;g.strokeStyle='#fff';g.lineWidth=1;
-    for(let i=0;i<10;i++){
-      g.beginPath();
-      g.moveTo(px+10*s,py+24*s+i*6.5*s);
-      g.lineTo(px+10*s+ts,py+24*s+i*5*s);
-      g.stroke();
+
+    // only re-render the panel when the result changes
+    if(this._panelCache && this._panelCacheKey===res){
+      g.drawImage(this._panelCache,W-220*s-10*s,10*s);
+      return;
     }
-    g.restore();
-    // confidence bar
-    const bx=px+10*s,by=py+92*s,bw=200*s,bh=6*s;
-    g.fillStyle='#1e1e28';g.fillRect(bx,by,bw,bh);
+
+    const pw=220*s,ph=190*s;
+    const oc=document.createElement('canvas');
+    oc.width=Math.ceil(pw);oc.height=Math.ceil(ph);
+    const og=oc.getContext('2d');
+
+    og.fillStyle='#0e0e12';rr(og,0,0,pw,ph,8*s);og.fill();
+    og.strokeStyle='#2a2a40';og.lineWidth=1;rr(og,0,0,pw,ph,8*s);og.stroke();
+    og.font=`700 ${9*s}px 'Share Tech Mono',monospace`;og.fillStyle='#1d9e75';
+    og.fillText('AI ANALYSIS',10*s,16*s);
+    const ts=62*s;
+    og.drawImage(img,10*s,24*s,ts,ts);
+    og.save();og.globalAlpha=0.15;og.strokeStyle='#fff';og.lineWidth=1;
+    for(let i=0;i<10;i++){
+      og.beginPath();og.moveTo(10*s,24*s+i*6.5*s);og.lineTo(10*s+ts,24*s+i*5*s);og.stroke();
+    }
+    og.restore();
+    const bw=200*s,bh=6*s,bx=10*s,by=92*s;
+    og.fillStyle='#1e1e28';og.fillRect(bx,by,bw,bh);
     const barCol=res.confidence>.75?'#1d9e75':res.confidence>.5?'#ef9f27':'#e24b4a';
-    g.fillStyle=barCol;g.fillRect(bx,by,bw*res.confidence,bh);
-    // prediction + confidence text
-    g.font=`${9.5*s}px 'Share Tech Mono',monospace`;g.fillStyle='#e8e8e0';
-    g.fillText(`Prediction: ${res.prediction}`,bx,py+82*s);
-    g.fillText(`Confidence: ${(res.confidence*100).toFixed(0)}%`,bx,py+108*s);
-    // reasoning
-    g.font=`${8*s}px 'Share Tech Mono',monospace`;g.fillStyle='#44445a';
-    g.fillText('WHY THIS PREDICTION:',bx,py+126*s);
-    g.fillStyle='#1d9e75';
+    og.fillStyle=barCol;og.fillRect(bx,by,bw*res.confidence,bh);
+    og.font=`${9.5*s}px 'Share Tech Mono',monospace`;og.fillStyle='#e8e8e0';
+    og.fillText(`Prediction: ${res.prediction}`,bx,82*s);
+    og.fillText(`Confidence: ${(res.confidence*100).toFixed(0)}%`,bx,108*s);
+    og.font=`${8*s}px 'Share Tech Mono',monospace`;og.fillStyle='#44445a';
+    og.fillText('WHY THIS PREDICTION:',bx,126*s);
+    og.fillStyle='#1d9e75';
     (res.reasoning||[]).slice(0,3).forEach((r,i)=>{
-      g.fillText(`• ${r}`,bx+4*s,py+140*s+i*16*s);
+      og.fillText(`• ${r}`,bx+4*s,140*s+i*16*s);
     });
-  }
+
+    this._panelCache=oc;
+    this._panelCacheKey=res;
+    g.drawImage(oc,W-pw-10*s,10*s);
   }
 
   _dHeader(){
