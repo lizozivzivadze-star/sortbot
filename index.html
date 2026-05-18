@@ -109,7 +109,6 @@
 // CONSTANTS
 // ═══════════════════════════════════════════════
 const CLASSES=['airplane','automobile','bird','cat','deer','dog','frog','horse','ship','truck'];
-
 const DEFECT=new Set(['frog','deer']);
 const TO_BIN={airplane:'metal',automobile:'metal',bird:'organic',cat:'organic',deer:'organic',dog:'organic',frog:'organic',horse:'organic',ship:'metal',truck:'metal'};
 const getBin=c=>DEFECT.has(c)?'reject':(TO_BIN[c]||'reject');
@@ -120,20 +119,20 @@ const BIN_COL={recycle:'#378add',organic:'#1d9e75',metal:'#7f77dd',reject:'#e24b
 const BIN_DIM={recycle:'#0a2040',organic:'#082e20',metal:'#1a1840',reject:'#3a1010'};
 const BIN_LBL={recycle:'♻ Recycle',organic:'🌿 Organic',metal:'⚙ Metal',reject:'✕ Reject'};
 const REASONING={
-  airplane:['long swept wings detected','thin symmetrical fuselage','high-altitude silhouette'],
-  automobile:['wheel arch contours','compact rectangular body','low ground clearance'],
-  bird:['small lightweight body','wing-spread outline','bright plumage color regions'],
-  cat:['pointed ear triangles','round face geometry','small compact body ratio'],
-  deer:['antler branch structures','long slender legs','brown earth-tone dominant'],
-  dog:['snout protrusion detected','four-leg silhouette','floppy ear regions'],
-  frog:['large protruding eyes','wide squat body','green dominant hue'],
-  horse:['elongated body mass','tall leg-to-body ratio','mane ridge along back'],
-  ship:['flat wide hull base','large rectangular superstructure','watercraft profile'],
-  truck:['large cargo body mass','strong vertical edges','multi-axle wheel pattern']
+  airplane:  ['long swept wings detected','thin symmetrical fuselage','high-altitude silhouette'],
+  automobile:['wheel arch contours found','compact rectangular body','low ground clearance'],
+  bird:      ['small lightweight body','wing-spread outline','bright plumage regions'],
+  cat:       ['pointed ear triangles','round face geometry','small compact body'],
+  deer:      ['antler branch structures','long slender legs','brown earth-tone dominant'],
+  dog:       ['snout protrusion detected','four-leg silhouette','floppy ear shape'],
+  frog:      ['large protruding eyes','wide squat body','green dominant hue'],
+  horse:     ['elongated body mass','tall leg-to-body ratio','mane ridge detected'],
+  ship:      ['flat wide hull base','large rectangular structure','watercraft profile'],
+  truck:     ['large cargo body','strong vertical edges','multi-axle wheel pattern'],
 };
 
 // ═══════════════════════════════════════════════
-// IMAGE GENERATOR — recognisable pixel-art per class
+// IMAGE GENERATOR
 // ═══════════════════════════════════════════════
 const IMG_CACHE={};
 function makeImg(cls){
@@ -143,8 +142,6 @@ function makeImg(cls){
   c.width=c.height=SZ;
   const g=c.getContext('2d');
   const cx=SZ/2, cy=SZ/2;
-
-  // background gradients per class
   const bgs={
     airplane:['#7aa8d8','#4470a8'],automobile:['#c85050','#902828'],
     bird:['#70a870','#3a7040'],cat:['#c8a060','#906028'],
@@ -156,8 +153,6 @@ function makeImg(cls){
   const gr=g.createLinearGradient(0,0,SZ,SZ);
   gr.addColorStop(0,c1); gr.addColorStop(1,c2);
   g.fillStyle=gr; g.fillRect(0,0,SZ,SZ);
-
-  // subtle noise
   const id=g.getImageData(0,0,SZ,SZ);
   for(let i=0;i<id.data.length;i+=4){
     const n=(Math.random()-.5)*18;
@@ -166,284 +161,160 @@ function makeImg(cls){
     id.data[i+2]=Math.max(0,Math.min(255,id.data[i+2]+n));
   }
   g.putImageData(id,0,0);
-
   g.save(); g.translate(cx,cy);
-
   ({
     airplane(){
-      // fuselage
       g.fillStyle='#e8eef8';
       g.beginPath(); g.ellipse(0,0,22,7,0,0,Math.PI*2); g.fill();
-      // wings
       g.fillStyle='#c0d0e8';
       g.beginPath(); g.moveTo(-5,-4); g.lineTo(-22,14); g.lineTo(8,4); g.closePath(); g.fill();
       g.beginPath(); g.moveTo(-5,4); g.lineTo(-22,-14); g.lineTo(8,-4); g.closePath(); g.fill();
-      // tail fin
       g.fillStyle='#a8c0d8';
       g.beginPath(); g.moveTo(16,-2); g.lineTo(24,-12); g.lineTo(24,0); g.closePath(); g.fill();
-      // cockpit window
       g.fillStyle='#90d8f8';
       g.beginPath(); g.ellipse(-10,0,6,5,0,0,Math.PI*2); g.fill();
-      // engine
-      g.fillStyle='#d0d8e8';
-      g.beginPath(); g.ellipse(-2,10,3,6,0,0,Math.PI*2); g.fill();
     },
     automobile(){
-      // body lower
       g.fillStyle='#e83030';
       g.beginPath(); g.roundRect(-20,2,40,14,4); g.fill();
-      // body upper
       g.fillStyle='#c81818';
       g.beginPath(); g.roundRect(-14,-12,28,15,6); g.fill();
-      // windshield
       g.fillStyle='#90d0f8';
       g.beginPath(); g.roundRect(-11,-10,12,10,2); g.fill();
-      // rear window
       g.beginPath(); g.roundRect(2,-10,10,10,2); g.fill();
-      // wheels
       [[-13,16],[13,16]].forEach(([wx,wy])=>{
         g.fillStyle='#1a1a1a'; g.beginPath(); g.arc(wx,wy,7,0,Math.PI*2); g.fill();
         g.fillStyle='#606060'; g.beginPath(); g.arc(wx,wy,3.5,0,Math.PI*2); g.fill();
         g.fillStyle='#909090'; g.beginPath(); g.arc(wx,wy,1.5,0,Math.PI*2); g.fill();
       });
-      // headlights
       g.fillStyle='#ffee80'; g.fillRect(-22,4,5,4);
       g.fillStyle='#ff8888'; g.fillRect(18,4,4,4);
-      // door line
       g.strokeStyle='#a01010'; g.lineWidth=1.2;
       g.beginPath(); g.moveTo(-2,-8); g.lineTo(-2,14); g.stroke();
     },
     bird(){
-      // body
       g.fillStyle='#e06020';
       g.beginPath(); g.ellipse(4,4,16,11,-.2,0,Math.PI*2); g.fill();
-      // head
       g.fillStyle='#f07030';
       g.beginPath(); g.arc(-12,-10,10,0,Math.PI*2); g.fill();
-      // wing
       g.fillStyle='#b84010';
       g.beginPath(); g.moveTo(4,-2); g.lineTo(24,-14); g.lineTo(20,8); g.closePath(); g.fill();
-      g.fillStyle='#d05018';
-      g.beginPath(); g.moveTo(4,-2); g.lineTo(18,-10); g.lineTo(14,6); g.closePath(); g.fill();
-      // tail
-      g.fillStyle='#a03808';
-      g.beginPath(); g.moveTo(18,8); g.lineTo(28,14); g.lineTo(20,16); g.closePath(); g.fill();
-      // eye
       g.fillStyle='#111'; g.beginPath(); g.arc(-14,-12,3,0,Math.PI*2); g.fill();
       g.fillStyle='#fff'; g.beginPath(); g.arc(-15,-13,1.2,0,Math.PI*2); g.fill();
-      // beak
       g.fillStyle='#f0c020';
       g.beginPath(); g.moveTo(-21,-9); g.lineTo(-28,-7); g.lineTo(-21,-4); g.closePath(); g.fill();
     },
     cat(){
-      // body
       g.fillStyle='#c8a060';
       g.beginPath(); g.ellipse(2,10,16,13,0,0,Math.PI*2); g.fill();
-      // head
       g.beginPath(); g.arc(-2,-8,15,0,Math.PI*2); g.fill();
-      // ears
       g.fillStyle='#b08040';
       g.beginPath(); g.moveTo(-16,-20); g.lineTo(-22,-32); g.lineTo(-6,-22); g.closePath(); g.fill();
       g.beginPath(); g.moveTo(10,-20); g.lineTo(18,-32); g.lineTo(6,-22); g.closePath(); g.fill();
-      g.fillStyle='#e09090';
-      g.beginPath(); g.moveTo(-15,-22); g.lineTo(-20,-30); g.lineTo(-7,-24); g.closePath(); g.fill();
-      g.beginPath(); g.moveTo(10,-22); g.lineTo(16,-30); g.lineTo(7,-24); g.closePath(); g.fill();
-      // eyes
       g.fillStyle='#48c048';
       [-7,5].forEach(ex=>{ g.beginPath(); g.ellipse(ex,-8,5,4,0,0,Math.PI*2); g.fill(); });
       g.fillStyle='#111';
       [-7,5].forEach(ex=>{ g.beginPath(); g.ellipse(ex,-8,2,4,0,0,Math.PI*2); g.fill(); });
-      g.fillStyle='rgba(255,255,255,.5)';
-      [-7,5].forEach(ex=>{ g.beginPath(); g.arc(ex-1,-9,1.2,0,Math.PI*2); g.fill(); });
-      // nose
       g.fillStyle='#e05878'; g.beginPath(); g.arc(-2,-2,3,0,Math.PI*2); g.fill();
-      // whiskers
-      g.strokeStyle='rgba(255,255,255,.55)'; g.lineWidth=.9;
-      [[-1,-1],[-1,-3],[1,-1],[1,-3]].forEach(([dx,dy])=>{
-        g.beginPath(); g.moveTo(dx*2,dy*2); g.lineTo(dx*18,dy*4); g.stroke();
-      });
-      // tail
       g.strokeStyle='#b08040'; g.lineWidth=4; g.lineCap='round';
       g.beginPath(); g.moveTo(16,18); g.quadraticCurveTo(28,10,24,-4); g.stroke();
       g.lineCap='butt';
     },
     deer(){
-      // body
       g.fillStyle='#9a6830';
       g.beginPath(); g.ellipse(2,8,16,12,0,0,Math.PI*2); g.fill();
-      // neck
       g.beginPath(); g.ellipse(-6,-4,8,12,.4,0,Math.PI*2); g.fill();
-      // head
       g.beginPath(); g.ellipse(-10,-16,10,8,.2,0,Math.PI*2); g.fill();
-      // antlers
       g.strokeStyle='#6a4018'; g.lineWidth=2.5; g.lineCap='round';
-      // left antler
       g.beginPath(); g.moveTo(-14,-23); g.lineTo(-18,-34); g.stroke();
       g.beginPath(); g.moveTo(-18,-30); g.lineTo(-24,-26); g.stroke();
-      g.beginPath(); g.moveTo(-16,-32); g.lineTo(-12,-27); g.stroke();
-      // right antler
       g.beginPath(); g.moveTo(-6,-23); g.lineTo(-4,-34); g.stroke();
       g.beginPath(); g.moveTo(-4,-30); g.lineTo(2,-26); g.stroke();
-      g.beginPath(); g.moveTo(-5,-32); g.lineTo(-9,-27); g.stroke();
       g.lineCap='butt';
-      // legs
       g.fillStyle='#7a5020';
       [[-8,18],[-2,18],[6,18],[12,18]].forEach(([lx,ly])=>g.fillRect(lx-2.5,ly,5,14));
-      // white belly
-      g.fillStyle='rgba(255,240,200,.4)';
-      g.beginPath(); g.ellipse(2,12,8,7,0,0,Math.PI*2); g.fill();
-      // eye
       g.fillStyle='#111'; g.beginPath(); g.arc(-13,-18,2.5,0,Math.PI*2); g.fill();
-      g.fillStyle='rgba(255,255,255,.6)'; g.beginPath(); g.arc(-14,-19,1,0,Math.PI*2); g.fill();
     },
     dog(){
-      // body
       g.fillStyle='#c08848';
       g.beginPath(); g.ellipse(4,6,17,12,0,0,Math.PI*2); g.fill();
-      // head
       g.beginPath(); g.ellipse(-6,-8,14,12,0,0,Math.PI*2); g.fill();
-      // ears (floppy)
       g.fillStyle='#a07030';
       g.beginPath(); g.ellipse(-18,-8,6,11,-.3,0,Math.PI*2); g.fill();
       g.beginPath(); g.ellipse(6,-14,6,9,.3,0,Math.PI*2); g.fill();
-      // snout
       g.fillStyle='#d8a870';
       g.beginPath(); g.ellipse(-6,-2,8,6,0,0,Math.PI*2); g.fill();
-      // nose
       g.fillStyle='#222'; g.beginPath(); g.arc(-6,-3,4,0,Math.PI*2); g.fill();
-      g.fillStyle='#555'; g.beginPath(); g.arc(-6,-3,2,0,Math.PI*2); g.fill();
-      // eyes
       g.fillStyle='#3a2010';
       [-12,2].forEach(ex=>{ g.beginPath(); g.arc(ex,-12,4,0,Math.PI*2); g.fill(); });
-      g.fillStyle='rgba(255,255,255,.5)';
-      [-12,2].forEach(ex=>{ g.beginPath(); g.arc(ex-1,-13,1.5,0,Math.PI*2); g.fill(); });
-      // tail
       g.strokeStyle='#c08848'; g.lineWidth=5; g.lineCap='round';
       g.beginPath(); g.moveTo(20,0); g.quadraticCurveTo(30,-12,26,-22); g.stroke();
-      // legs
       g.fillStyle='#a07030';
       [[-10,16],[-2,16],[10,16],[18,16]].forEach(([lx,ly])=>g.fillRect(lx-3,ly,6,12));
       g.lineCap='butt';
     },
     frog(){
-      // body
       g.fillStyle='#28a828';
       g.beginPath(); g.ellipse(0,6,20,16,0,0,Math.PI*2); g.fill();
-      // head
       g.beginPath(); g.ellipse(0,-10,18,12,0,0,Math.PI*2); g.fill();
-      // eye bumps
       g.fillStyle='#38c038';
       [-11,11].forEach(ex=>{ g.beginPath(); g.arc(ex,-20,8,0,Math.PI*2); g.fill(); });
-      // pupils
       g.fillStyle='#0a1f0a';
       [-11,11].forEach(ex=>{ g.beginPath(); g.arc(ex,-20,4,0,Math.PI*2); g.fill(); });
-      g.fillStyle='rgba(255,255,255,.5)';
-      [-11,11].forEach(ex=>{ g.beginPath(); g.arc(ex-1,-21,1.5,0,Math.PI*2); g.fill(); });
-      // mouth smile
       g.strokeStyle='#1a6a1a'; g.lineWidth=2;
       g.beginPath(); g.arc(0,-8,10,.15,Math.PI-.15); g.stroke();
-      // belly
       g.fillStyle='#80e880'; g.beginPath(); g.ellipse(0,8,12,10,0,0,Math.PI*2); g.fill();
-      // back legs
       g.fillStyle='#209020';
       g.beginPath(); g.moveTo(-18,14); g.lineTo(-30,26); g.lineTo(-26,30); g.lineTo(-14,20); g.closePath(); g.fill();
       g.beginPath(); g.moveTo(18,14); g.lineTo(30,26); g.lineTo(26,30); g.lineTo(14,20); g.closePath(); g.fill();
-      // front arms
-      g.beginPath(); g.moveTo(-18,0); g.lineTo(-28,8); g.lineTo(-24,12); g.lineTo(-14,6); g.closePath(); g.fill();
-      g.beginPath(); g.moveTo(18,0); g.lineTo(28,8); g.lineTo(24,12); g.lineTo(14,6); g.closePath(); g.fill();
     },
     horse(){
-      // body
       g.fillStyle='#603818';
       g.beginPath(); g.ellipse(4,4,20,12,0,0,Math.PI*2); g.fill();
-      // neck
       g.beginPath(); g.ellipse(-12,-6,8,14,-.5,0,Math.PI*2); g.fill();
-      // head
       g.beginPath(); g.ellipse(-20,-18,10,8,-.3,0,Math.PI*2); g.fill();
-      // mane
       g.fillStyle='#301808';
       for(let i=0;i<6;i++){
         g.beginPath(); g.ellipse(-10+i*1.5,-4-i*3.5,3,6,-.3,0,Math.PI*2); g.fill();
       }
-      // legs
       g.fillStyle='#502a10';
       [[-10,14],[-2,14],[8,14],[16,14]].forEach(([lx,ly])=>g.fillRect(lx-3,ly,6,16));
-      // hooves
       g.fillStyle='#1a1a1a';
       [[-10,28],[-2,28],[8,28],[16,28]].forEach(([lx,ly])=>g.fillRect(lx-3,ly,6,4));
-      // eye
       g.fillStyle='#111'; g.beginPath(); g.arc(-22,-20,3,0,Math.PI*2); g.fill();
-      g.fillStyle='rgba(255,255,255,.5)'; g.beginPath(); g.arc(-23,-21,1.2,0,Math.PI*2); g.fill();
-      // nostril
-      g.fillStyle='#2a1008'; g.beginPath(); g.arc(-27,-15,2.5,0,Math.PI*2); g.fill();
-      // tail
       g.strokeStyle='#301808'; g.lineWidth=4; g.lineCap='round';
       g.beginPath(); g.moveTo(24,0); g.quadraticCurveTo(32,10,28,24); g.stroke();
       g.lineCap='butt';
     },
     ship(){
-      // water
       g.fillStyle='rgba(60,120,200,.3)';
       g.fillRect(-30,18,60,14);
-      // hull
       g.fillStyle='#4070b0';
       g.beginPath(); g.moveTo(-24,6); g.lineTo(24,6); g.lineTo(20,20); g.lineTo(-20,20); g.closePath(); g.fill();
-      // hull stripe
-      g.fillStyle='#2050a0';
-      g.fillRect(-22,14,44,4);
-      // deck
+      g.fillStyle='#2050a0'; g.fillRect(-22,14,44,4);
       g.fillStyle='#5080c0'; g.fillRect(-22,0,44,8);
-      // superstructure
       g.fillStyle='#e8e0c8'; g.beginPath(); g.roundRect(-6,-16,22,18,2); g.fill();
-      g.fillStyle='#d8d0b8'; g.beginPath(); g.roundRect(4,-24,10,10,2); g.fill();
-      // funnel
       g.fillStyle='#c82020'; g.fillRect(6,-28,6,8);
-      g.fillStyle='#a01010'; g.fillRect(5,-30,8,4);
-      // smoke puffs
       g.fillStyle='rgba(200,200,200,.45)';
       [8,10,7].forEach((r,i)=>{ g.beginPath(); g.arc(9,-32-i*6,r,0,Math.PI*2); g.fill(); });
-      // windows
       g.fillStyle='#a0d8f8';
       [-2,6].forEach(wx=>{ g.fillRect(wx,-13,5,5); });
-      // porthole
-      g.strokeStyle='#6090c0'; g.lineWidth=1.5;
-      [-14,-8,-2].forEach(px=>{ g.beginPath(); g.arc(px,4,3,0,Math.PI*2); g.stroke(); });
     },
     truck(){
-      // trailer
       g.fillStyle='#b06028'; g.beginPath(); g.roundRect(-28,-12,20,24,2); g.fill();
-      // trailer ribs
       g.strokeStyle='#904818'; g.lineWidth=1.2;
       [-20,-14,-8].forEach(lx=>{ g.beginPath(); g.moveTo(lx,-10); g.lineTo(lx,10); g.stroke(); });
-      // cab
       g.fillStyle='#d07030'; g.beginPath(); g.roundRect(-8,-16,22,28,4); g.fill();
-      // windshield
       g.fillStyle='#88c8f0'; g.beginPath(); g.roundRect(-6,-14,18,12,3); g.fill();
-      // windshield tint
-      g.fillStyle='rgba(0,80,150,.2)'; g.beginPath(); g.roundRect(-6,-14,18,12,3); g.fill();
-      // cabin top light bar
       g.fillStyle='#ff4444'; g.fillRect(-2,-18,14,3);
-      // door line
-      g.strokeStyle='#b06020'; g.lineWidth=1.2;
-      g.beginPath(); g.moveTo(-8,-12); g.lineTo(-8,10); g.stroke();
-      // headlight
       g.fillStyle='#ffee80'; g.fillRect(12,-8,5,5);
-      // wheels
       [[-20,14],[-8,14],[6,14]].forEach(([wx,wy])=>{
         g.fillStyle='#1a1a1a'; g.beginPath(); g.arc(wx,wy,7,0,Math.PI*2); g.fill();
         g.fillStyle='#555'; g.beginPath(); g.arc(wx,wy,3.5,0,Math.PI*2); g.fill();
         g.fillStyle='#888'; g.beginPath(); g.arc(wx,wy,1.5,0,Math.PI*2); g.fill();
       });
-      // exhaust pipe
-      g.strokeStyle='#808080'; g.lineWidth=2.5; g.lineCap='round';
-      g.beginPath(); g.moveTo(-6,-16); g.lineTo(-6,-24); g.stroke();
-      g.fillStyle='rgba(180,180,180,.4)';
-      g.beginPath(); g.arc(-6,-28,3,0,Math.PI*2); g.fill();
-      g.beginPath(); g.arc(-8,-34,2,0,Math.PI*2); g.fill();
-      g.lineCap='butt';
     },
   }[cls]||function(){})();
-
   g.restore();
   IMG_CACHE[cls]=c;
   return c;
@@ -507,56 +378,46 @@ class Game{
     this.pipe=new Pipeline(opts.classifier,opts.noiseLevel);
     this.spd=opts.beltSpeed;
     this._resize();
-
-    // Pre-render all 10 class images at start
     CLASSES.forEach(c=>makeImg(c));
-
     this.batch=Array.from({length:opts.batchSize},()=>{
       const cls=CLASSES[Math.floor(Math.random()*CLASSES.length)];
       return{cls,img:makeImg(cls)};
     });
-
     this.items=[];this.iIdx=0;this.spT=0;
     this.score=0;this.streak=0;this.best=0;
     this.total=0;this.correct=0;
     this.pc=Object.fromEntries(CLASSES.map(c=>[c,[0,0]]));
     this.paused=false;this.done=false;
     this.bOff=0;this.pLog=['Initialising…'];this.fb=[];
-    this.aAng=0;this.aTgt=0;this.scanPause=0;
+    this.aAng=0;this.aTgt=0;
+    this.scanPause=0;
     this.lastResult=null;this.lastResultImg=null;
     this._pending=[];
+    this._panelCache=null;this._panelCacheKey=null;
     this.lastT=null;this.raf=null;
-
     this._kb=e=>this._key(e);
     window.addEventListener('keydown',this._kb);
-    let _resizeTimer;
-    window.addEventListener('resize',()=>{clearTimeout(_resizeTimer);_resizeTimer=setTimeout(()=>this._resize(),120);});
+    let _rt; window.addEventListener('resize',()=>{clearTimeout(_rt);_rt=setTimeout(()=>this._resize(),120);});
   }
 
   _resize(){
     this.cv.width=this.cv.offsetWidth;
     this.cv.height=this.cv.offsetHeight;
     this.W=this.cv.width; this.H=this.cv.height;
-
-    // Scale entire 800×580 logical space to fit screen
-    // Layout zones (logical coords, scaled):
-    // 0–50:   header
-    // 50–310: belt area (belt centre at 200)
-    // 310–420: bins
-    // 420–580: log + stats panels
     const s=Math.min(this.W/800,this.H/580);
     this.s=s;
-    this.BY=Math.round(185*s);   // belt centre Y
-    this.BH=Math.round(80*s);    // belt height
-    this.SX=Math.round(470*s);   // scan X
-    this.IS=Math.round(60*s);    // item size (px)
-    this.BINY=Math.round(365*s); // bin centre Y
-    this.BINW=Math.round(105*s); // bin width
-    this.BINH=Math.round(72*s);  // bin height
-    this.PY=Math.round(455*s);   // panels Y
-    this.PH=Math.round(108*s);   // panels height
-    this.LW=Math.round(370*s);   // log panel width
-    this.SX2=Math.round(395*s);  // stats panel X
+    this.BY=Math.round(185*s);
+    this.BH=Math.round(80*s);
+    this.SX=Math.round(470*s);
+    this.IS=Math.round(60*s);
+    this.BINY=Math.round(365*s);
+    this.BINW=Math.round(105*s);
+    this.BINH=Math.round(72*s);
+    this.PY=Math.round(455*s);
+    this.PH=Math.round(108*s);
+    this.LW=Math.round(370*s);
+    this.SX2=Math.round(395*s);
+    this._panelCache=null; // invalidate on resize
   }
 
   start(){this.lastT=performance.now();this.raf=requestAnimationFrame(t=>this._loop(t));}
@@ -569,14 +430,16 @@ class Game{
   }
 
   _loop(now){
-    const dt=Math.min((now-this.lastT)/1000,.1);this.lastT=now;
+    const dt=Math.min((now-this.lastT)/1000,.05);this.lastT=now;
     if(!this.paused&&!this.done)this._update(dt);
     this._draw();
     if(!this.done)this.raf=requestAnimationFrame(t=>this._loop(t));
   }
 
   _update(dt){
+    // drain scan pause — belt freezes while AI "thinks"
     if(this.scanPause>0){this.scanPause-=dt;return;}
+
     const mv=this.spd*68*dt*this.s;
     this.bOff=(this.bOff+mv)%38;
 
@@ -590,25 +453,26 @@ class Game{
       it.x-=mv;it.age+=dt;
       if(it.ft>0)it.ft-=dt;else if(it.ft<0)it.ft+=dt;
       if(!it.clf&&it.x<=this.SX){
-        it.clf=true;this.scanPause=1.1;
+        it.clf=true;
+        this.scanPause=1.0;
         this.pLog=['Stage 1: frame captured','Stage 2: preprocessing…'];
-        const r=this.pipe.process(it.cls);
-        this._pending.push({it,r});
+        // run pipeline synchronously, queue result for in-loop apply
+        this._pending.push({it, r:this.pipe.process(it.cls)});
       }
     }
-    this.items=this.items.filter(i=>i.x>-110);
 
-    // drain pending results — applied in-loop, no async races
+    // apply pending results inside the loop — no async races
     while(this._pending.length){
       const{it,r}=this._pending.shift();
       this._apply(it,r);
     }
 
+    this.items=this.items.filter(i=>i.x>-110);
     this.aAng+=(this.aTgt-this.aAng)*Math.min(1,dt*6);
     this.fb=this.fb.filter(f=>f.a>0);
     for(const f of this.fb){f.a-=dt*1.4;f.dy-=dt*26;}
 
-    if(this.iIdx>=this.batch.length&&this.items.length===0){
+    if(this.iIdx>=this.batch.length&&this.items.length===0&&!this._pending.length){
       this.done=true;setTimeout(()=>this._end(),1500);
     }
   }
@@ -634,6 +498,7 @@ class Game{
     this.pLog=['AI scanner active',...res.stageLog.slice(-5)];
     this.lastResult=res;
     this.lastResultImg=it.img;
+    this._panelCache=null; // force panel redraw
   }
 
   _draw(){
@@ -647,52 +512,6 @@ class Game{
     this._dHint();
   }
 
-  _dAnalysisPanel(){
-    const{g,s,W}=this;
-    const res=this.lastResult; const img=this.lastResultImg;
-    if(!res||!img) return;
-
-    // only re-render the panel when the result changes
-    if(this._panelCache && this._panelCacheKey===res){
-      g.drawImage(this._panelCache,W-220*s-10*s,10*s);
-      return;
-    }
-
-    const pw=220*s,ph=190*s;
-    const oc=document.createElement('canvas');
-    oc.width=Math.ceil(pw);oc.height=Math.ceil(ph);
-    const og=oc.getContext('2d');
-
-    og.fillStyle='#0e0e12';rr(og,0,0,pw,ph,8*s);og.fill();
-    og.strokeStyle='#2a2a40';og.lineWidth=1;rr(og,0,0,pw,ph,8*s);og.stroke();
-    og.font=`700 ${9*s}px 'Share Tech Mono',monospace`;og.fillStyle='#1d9e75';
-    og.fillText('AI ANALYSIS',10*s,16*s);
-    const ts=62*s;
-    og.drawImage(img,10*s,24*s,ts,ts);
-    og.save();og.globalAlpha=0.15;og.strokeStyle='#fff';og.lineWidth=1;
-    for(let i=0;i<10;i++){
-      og.beginPath();og.moveTo(10*s,24*s+i*6.5*s);og.lineTo(10*s+ts,24*s+i*5*s);og.stroke();
-    }
-    og.restore();
-    const bw=200*s,bh=6*s,bx=10*s,by=92*s;
-    og.fillStyle='#1e1e28';og.fillRect(bx,by,bw,bh);
-    const barCol=res.confidence>.75?'#1d9e75':res.confidence>.5?'#ef9f27':'#e24b4a';
-    og.fillStyle=barCol;og.fillRect(bx,by,bw*res.confidence,bh);
-    og.font=`${9.5*s}px 'Share Tech Mono',monospace`;og.fillStyle='#e8e8e0';
-    og.fillText(`Prediction: ${res.prediction}`,bx,82*s);
-    og.fillText(`Confidence: ${(res.confidence*100).toFixed(0)}%`,bx,108*s);
-    og.font=`${8*s}px 'Share Tech Mono',monospace`;og.fillStyle='#44445a';
-    og.fillText('WHY THIS PREDICTION:',bx,126*s);
-    og.fillStyle='#1d9e75';
-    (res.reasoning||[]).slice(0,3).forEach((r,i)=>{
-      og.fillText(`• ${r}`,bx+4*s,140*s+i*16*s);
-    });
-
-    this._panelCache=oc;
-    this._panelCacheKey=res;
-    g.drawImage(oc,W-pw-10*s,10*s);
-  }
-
   _dHeader(){
     const{g,s}=this;
     g.font=`700 ${15*s}px Barlow,sans-serif`;g.fillStyle='#f0f0eb';
@@ -704,15 +523,11 @@ class Game{
   _dBelt(){
     const{g,W,BY,BH,bOff,s}=this;
     const top=BY-BH/2;
-    // belt body
     g.fillStyle='#1e1e26';g.fillRect(0,top,W,BH);
-    // stripes
     g.strokeStyle='#28283a';g.lineWidth=1;
     for(let x=-bOff;x<W;x+=38*s){g.beginPath();g.moveTo(x,top);g.lineTo(x,top+BH);g.stroke();}
-    // roller strip top/bottom
     const rh=7*s;
     g.fillStyle='#2a2a38';g.fillRect(0,top,W,rh);g.fillRect(0,top+BH-rh,W,rh);
-    // edges
     g.strokeStyle='#4a4a5a';g.lineWidth=1.5;
     g.beginPath();g.moveTo(0,top);g.lineTo(W,top);g.stroke();
     g.beginPath();g.moveTo(0,top+BH);g.lineTo(W,top+BH);g.stroke();
@@ -722,7 +537,6 @@ class Game{
     const{g,BY,IS,s}=this;
     for(const it of this.items){
       const x=Math.round(it.x),y=BY,hw=IS/2;
-      // glow flash
       if(it.ft!==0){
         const a=Math.min(.6,Math.abs(it.ft)*1.8);
         g.save();g.globalAlpha=a;
@@ -730,15 +544,11 @@ class Game{
         g.fillRect(x-hw-5,y-hw-5,IS+10,IS+10);
         g.restore();
       }
-      // drop shadow
       g.save();g.globalAlpha=.25;g.fillStyle='#000';g.fillRect(x-hw+3,y+hw,IS,5);g.restore();
-      // draw image
       g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';
       g.drawImage(it.img,x-hw,y-hw,IS,IS);
-      // border
       g.strokeStyle=it.result?(it.result.isCorrect?'#1d9e75':'#e24b4a'):'#3a3a4a';
       g.lineWidth=2;g.strokeRect(x-hw,y-hw,IS,IS);
-      // label pill
       if(it.clf&&it.result){
         const lbl=`${it.result.prediction} ${(it.result.confidence*100).toFixed(0)}%`;
         g.font=`${9.5*s}px 'Share Tech Mono',monospace`;
@@ -784,17 +594,12 @@ class Game{
     for(let i=0;i<4;i++){
       const b=bins[i],cx=sp/2+i*sp,cy=BINY;
       const col=BIN_COL[b],dim=BIN_DIM[b];
-      // shadow
       g.save();g.globalAlpha=.2;g.fillStyle='#000';
       rr(g,cx-BINW/2+4,cy-BINH/2+4,BINW,BINH,8*s);g.fill();g.restore();
-      // fill
       g.fillStyle=dim;rr(g,cx-BINW/2,cy-BINH/2,BINW,BINH,8*s);g.fill();
-      // glow border
       g.strokeStyle=col;g.lineWidth=2;rr(g,cx-BINW/2,cy-BINH/2,BINW,BINH,8*s);g.stroke();
-      // label
       g.font=`600 ${10.5*s}px Barlow,sans-serif`;g.fillStyle=col;g.textAlign='center';
       g.fillText(BIN_LBL[b],cx,cy-8*s);
-      // count
       const cnt=CLASSES.filter(c=>getBin(c)===b).reduce((a,c)=>a+this.pc[c][0],0);
       g.font=`700 ${20*s}px 'Share Tech Mono',monospace`;g.fillStyle='#f0f0eb';
       g.fillText(cnt,cx,cy+14*s);g.textAlign='left';
@@ -843,6 +648,42 @@ class Game{
       g.fillText(f.text,f.x,f.y+f.dy);g.restore();
     }
     g.textAlign='left';
+  }
+
+  _dAnalysisPanel(){
+    const{g,s,W}=this;
+    const res=this.lastResult,img=this.lastResultImg;
+    if(!res||!img) return;
+    // use cached offscreen canvas — only redrawn when _panelCache is nulled
+    if(!this._panelCache){
+      const pw=220*s,ph=195*s;
+      const oc=document.createElement('canvas');
+      oc.width=Math.ceil(pw);oc.height=Math.ceil(ph);
+      const og=oc.getContext('2d');
+      og.fillStyle='#0e0e12';rr(og,0,0,pw,ph,8*s);og.fill();
+      og.strokeStyle='#2a2a40';og.lineWidth=1;rr(og,0,0,pw,ph,8*s);og.stroke();
+      og.font=`700 ${9*s}px 'Share Tech Mono',monospace`;og.fillStyle='#1d9e75';
+      og.fillText('AI ANALYSIS',10*s,16*s);
+      const ts=62*s;
+      og.drawImage(img,10*s,24*s,ts,ts);
+      // fake edge overlay
+      og.save();og.globalAlpha=0.15;og.strokeStyle='#fff';og.lineWidth=1;
+      for(let i=0;i<10;i++){og.beginPath();og.moveTo(10*s,24*s+i*6.5*s);og.lineTo(10*s+ts,24*s+i*5*s);og.stroke();}
+      og.restore();
+      // confidence bar
+      og.fillStyle='#1e1e28';og.fillRect(10*s,92*s,200*s,6*s);
+      const bc=res.confidence>.75?'#1d9e75':res.confidence>.5?'#ef9f27':'#e24b4a';
+      og.fillStyle=bc;og.fillRect(10*s,92*s,200*s*res.confidence,6*s);
+      og.font=`${9.5*s}px 'Share Tech Mono',monospace`;og.fillStyle='#e8e8e0';
+      og.fillText(`Prediction: ${res.prediction}`,10*s,82*s);
+      og.fillText(`Confidence: ${(res.confidence*100).toFixed(0)}%`,10*s,108*s);
+      og.font=`${8*s}px 'Share Tech Mono',monospace`;og.fillStyle='#44445a';
+      og.fillText('WHY THIS PREDICTION:',10*s,126*s);
+      og.fillStyle='#1d9e75';
+      (res.reasoning||[]).slice(0,3).forEach((r,i)=>{og.fillText(`• ${r}`,14*s,142*s+i*16*s);});
+      this._panelCache=oc;
+    }
+    g.drawImage(this._panelCache,W-220*s-10*s,10*s);
   }
 
   _dHint(){
